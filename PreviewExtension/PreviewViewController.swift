@@ -1,0 +1,54 @@
+import Cocoa
+import QuickLookUI
+
+/// View-based Quick Look preview: renders Markdown to NSAttributedString and
+/// shows it in an NSTextView. No WebKit / JavaScript, so it works inside the
+/// Quick Look sandbox with ad-hoc code signing.
+final class PreviewViewController: NSViewController, QLPreviewingController {
+
+    private let textView = NSTextView()
+
+    override func loadView() {
+        let scrollView = NSScrollView()
+        scrollView.hasVerticalScroller = true
+        scrollView.autohidesScrollers = true
+        scrollView.drawsBackground = true
+
+        textView.isEditable = false
+        textView.isSelectable = true
+        textView.isRichText = true
+        textView.drawsBackground = true
+        textView.textContainerInset = NSSize(width: 24, height: 20)
+        textView.autoresizingMask = [.width]
+        textView.isVerticallyResizable = true
+        textView.isHorizontallyResizable = false
+        textView.textContainer?.widthTracksTextView = true
+        textView.textContainer?.containerSize = NSSize(width: 0, height: CGFloat.greatestFiniteMagnitude)
+        textView.minSize = NSSize(width: 0, height: 0)
+        textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+
+        scrollView.documentView = textView
+        self.view = scrollView
+        self.preferredContentSize = NSSize(width: 780, height: 560)
+    }
+
+    func preparePreviewOfFile(at url: URL, completionHandler handler: @escaping (Error?) -> Void) {
+        // We also claim public.plain-text (to win the .md UTI), so decline
+        // any non-Markdown file and let macOS fall back to its own preview.
+        let ext = url.pathExtension.lowercased()
+        guard ["md", "markdown", "mdown", "mkd", "mkdn"].contains(ext) else {
+            handler(nil)
+            return
+        }
+        let raw: String
+        if let s = try? String(contentsOf: url, encoding: .utf8) {
+            raw = s
+        } else {
+            raw = (try? String(contentsOf: url, encoding: .isoLatin1)) ?? ""
+        }
+
+        let attributed = MarkdownRenderer.attributedString(from: raw)
+        textView.textStorage?.setAttributedString(attributed)
+        handler(nil)
+    }
+}

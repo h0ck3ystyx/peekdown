@@ -1,0 +1,129 @@
+name: MarkdownPreview
+options:
+  bundleIdPrefix: com.markdownpreview
+  deploymentTarget:
+    macOS: "12.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: "7ZH96S5LF4"
+    MACOSX_DEPLOYMENT_TARGET: "12.0"
+    GENERATE_INFOPLIST_FILE: NO
+
+targets:
+  MarkdownPreview:
+    type: application
+    platform: macOS
+    sources:
+      - path: MarkdownPreview
+        excludes:
+          - "Info.plist"
+          - "*.entitlements"
+    info:
+      path: MarkdownPreview/Info.plist
+      properties:
+        LSMinimumSystemVersion: "$(MACOSX_DEPLOYMENT_TARGET)"
+        NSPrincipalClass: NSApplication
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Markdown Document
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Owner
+            CFBundleTypeExtensions: [md, markdown, mdown, mkd, mkdn]
+            LSItemContentTypes: [net.daringfireball.markdown, public.markdown]
+        UTExportedTypeDeclarations:
+          - UTTypeIdentifier: net.daringfireball.markdown
+            UTTypeDescription: Markdown
+            UTTypeConformsTo: [public.plain-text]
+            UTTypeTagSpecification:
+              public.filename-extension: [md, markdown, mdown, mkd, mkdn]
+              public.mime-type: text/markdown
+    entitlements:
+      path: MarkdownPreview/MarkdownPreview.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.files.user-selected.read-only: true
+    dependencies:
+      - target: PreviewExtension
+        embed: true
+        codeSign: true
+      - target: ThumbnailExtension
+        embed: true
+        codeSign: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.markdownpreview.app
+        PRODUCT_NAME: MarkdownPreview
+
+  PreviewExtension:
+    type: app-extension
+    platform: macOS
+    sources:
+      - path: PreviewExtension
+        excludes:
+          - "Info.plist"
+          - "*.entitlements"
+    info:
+      path: PreviewExtension/Info.plist
+      properties:
+        CFBundleDisplayName: Markdown Preview
+        LSMinimumSystemVersion: "$(MACOSX_DEPLOYMENT_TARGET)"
+        NSExtension:
+          NSExtensionAttributes:
+            QLIsDataBasedPreview: false
+            QLSupportedContentTypes: [net.daringfireball.markdown, public.markdown, com.unknown.md, public.plain-text]
+            QLSupportsSearchableItems: false
+          NSExtensionPointIdentifier: com.apple.quicklook.preview
+          NSExtensionPrincipalClass: "$(PRODUCT_MODULE_NAME).PreviewViewController"
+    entitlements:
+      path: PreviewExtension/PreviewExtension.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.files.user-selected.read-only: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.markdownpreview.app.preview
+        PRODUCT_NAME: PreviewExtension
+        SKIP_INSTALL: YES
+
+  ThumbnailExtension:
+    type: app-extension
+    platform: macOS
+    sources:
+      - path: ThumbnailExtension
+        excludes:
+          - "Info.plist"
+          - "*.entitlements"
+    info:
+      path: ThumbnailExtension/Info.plist
+      properties:
+        CFBundleDisplayName: Markdown Thumbnail
+        LSMinimumSystemVersion: "$(MACOSX_DEPLOYMENT_TARGET)"
+        NSExtension:
+          NSExtensionAttributes:
+            QLSupportedContentTypes: [net.daringfireball.markdown, public.markdown, com.unknown.md, public.plain-text]
+            QLThumbnailMinimumDimension: 0
+          NSExtensionPointIdentifier: com.apple.quicklook.thumbnail
+          NSExtensionPrincipalClass: "$(PRODUCT_MODULE_NAME).ThumbnailProvider"
+    entitlements:
+      path: ThumbnailExtension/ThumbnailExtension.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.files.user-selected.read-only: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.markdownpreview.app.thumbnail
+        PRODUCT_NAME: ThumbnailExtension
+        SKIP_INSTALL: YES
+
+schemes:
+  MarkdownPreview:
+    build:
+      targets:
+        MarkdownPreview: all
+    run:
+      config: Debug
+    archive:
+      config: Release
