@@ -1,55 +1,59 @@
 #!/bin/bash
-# Build MarkdownPreview.app (host + Quick Look preview/thumbnail extensions)
-# using only the Command Line Tools (no full Xcode required).
+# Universal macOS build. Ad-hoc by default; release.sh supplies Developer ID.
 set -euo pipefail
 cd "$(dirname "$0")"
-
 SDK="$(xcrun --sdk macosx --show-sdk-path)"
-TARGET="arm64-apple-macos12.0"
-BUILD="build"
-DEST="$BUILD/MarkdownPreview.app"
-
+BUILD="build/local"
+DEST="$BUILD/Peekdown.app"
+IDENTITY="${APPLICATION_IDENTITY:--}"
+VERSION="${VERSION:-1.0}"
+BUILD_NUMBER="${BUILD_NUMBER:-1}"
+[[ "$VERSION" =~ ^[0-9]+(\.[0-9]+){0,2}$ ]] || { echo "Invalid VERSION" >&2; exit 1; }
+[[ "$BUILD_NUMBER" =~ ^[0-9]+$ ]] || { echo "Invalid BUILD_NUMBER" >&2; exit 1; }
 rm -rf "$BUILD"
 mkdir -p "$DEST/Contents/MacOS" "$DEST/Contents/Resources" "$DEST/Contents/PlugIns"
-
-echo "==> Compiling PreviewExtension.appex"
+compile() {
+    local name="$1" output="$2"
+    shift 2
+    local arch
+    for arch in arm64 x86_64; do
+        xcrun swiftc -O -emit-executable -module-name "$name" \
+          -sdk "$SDK" -target "$arch-apple-macos12.0" \
+          -o "$BUILD/$name-$arch" "$@"
+    done
+    xcrun lipo -create "$BUILD/$name-arm64" "$BUILD/$name-x86_64" -output "$output"
+    xcrun lipo "$output" -verify_arch arm64 x86_64
+}
 PE="$DEST/Contents/PlugIns/PreviewExtension.appex"
-mkdir -p "$PE/Contents/MacOS"
-swiftc -emit-executable -module-name PreviewExtension \
-  -o "$PE/Contents/MacOS/PreviewExtension" \
-  -sdk "$SDK" -target "$TARGET" \
-  -framework QuickLookUI -framework AppKit \
-  -Xlinker -e -Xlinker _NSExtensionMain \
-  PreviewExtension/MarkdownRenderer.swift PreviewExtension/PreviewViewController.swift
-cp Packaging/PreviewExt-Info.plist "$PE/Contents/Info.plist"
-
-echo "==> Compiling ThumbnailExtension.appex"
 TE="$DEST/Contents/PlugIns/ThumbnailExtension.appex"
-mkdir -p "$TE/Contents/MacOS"
-swiftc -emit-executable -module-name ThumbnailExtension \
-  -o "$TE/Contents/MacOS/ThumbnailExtension" \
-  -sdk "$SDK" -target "$TARGET" \
-  -framework QuickLookThumbnailing -framework AppKit \
+mkdir -p "$PE/Contents/MacOS" "$TE/Contents/MacOS"
+echo "==> Compiling universal extensions and app"
+compile PreviewExtension "$PE/Contents/MacOS/PreviewExtension" \
+  -framework QuickLookUI -framework AppKit -application-extension \
   -Xlinker -e -Xlinker _NSExtensionMain \
-  ThumbnailExtension/ThumbnailProvider.swift
+  Shared/MarkdownText.swift PreviewExtension/MarkdownRenderer.swift PreviewExtension/PreviewViewController.swift
+compile ThumbnailExtension "$TE/Contents/MacOS/ThumbnailExtension" \
+  -framework QuickLookThumbnailing -framework AppKit -application-extension \
+  -Xlinker -e -Xlinker _NSExtensionMain \
+  Shared/MarkdownText.swift ThumbnailExtension/ThumbnailProvider.swift
+compile Peekdown "$DEST/Contents/MacOS/Peekdown" \
+  -framework SwiftUI Peekdown/PeekdownApp.swift Peekdown/ContentView.swift
+cp Packaging/PreviewExt-Info.plist "$PE/Contents/Info.plist"
 cp Packaging/ThumbExt-Info.plist "$TE/Contents/Info.plist"
-
-echo "==> Compiling host app"
-swiftc -emit-executable -module-name MarkdownPreview \
-  -o "$DEST/Contents/MacOS/MarkdownPreview" \
-  -sdk "$SDK" -target "$TARGET" \
-  -framework SwiftUI \
-  MarkdownPreview/MarkdownPreviewApp.swift MarkdownPreview/ContentView.swift
 cp Packaging/App-Info.plist "$DEST/Contents/Info.plist"
-
-echo "==> Signing (ad-hoc, inner -> outer)"
-codesign --force --sign - --entitlements PreviewExtension/PreviewExtension.entitlements "$PE"
-codesign --force --sign - --entitlements ThumbnailExtension/ThumbnailExtension.entitlements "$TE"
-codesign --force --sign - --entitlements MarkdownPreview/MarkdownPreview.entitlements "$DEST"
-
-echo "==> Verifying signatures"
-codesign --verify --verbose=2 "$PE" >/dev/null 2>&1 && echo "  PreviewExtension.appex: valid"
-codesign --verify --verbose=2 "$TE" >/dev/null 2>&1 && echo "  ThumbnailExtension.appex: valid"
-codesign --verify --verbose=2 "$DEST" >/dev/null 2>&1 && echo "  MarkdownPreview.app: valid"
-
-echo "==> Build complete: $DEST"
+cp LICENSE "$DEST/Contents/Resources/LICENSE"
+for bundle in "$PE" "$TE" "$DEST"; do
+    /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$bundle/Contents/Info.plist"
+    /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" "$bundle/Contents/Info.plist"
+done
+SIGN_OPTIONS=(--force --sign "$IDENTITY" --options runtime)
+if [[ "$IDENTITY" != "-" ]]; then SIGN_OPTIONS+=(--timestamp); fi
+echo "==> Signing extensions, then host"
+codesign "${SIGN_OPTIONS[@]}" --entitlements PreviewExtension/PreviewExtension.entitlements "$PE"
+codesign "${SIGN_OPTIONS[@]}" --entitlements ThumbnailExtension/ThumbnailExtension.entitlements "$TE"
+codesign "${SIGN_OPTIONS[@]}" --entitlements Peekdown/Peekdown.entitlements "$DEST"
+for bundle in "$PE" "$TE" "$DEST"; do
+    codesign --verify --strict --verbose=2 "$bundle"
+done
+codesign --verify --deep --strict --verbose=2 "$DEST"
+echo "==> Built: $DEST (identity: $IDENTITY)"

@@ -32,18 +32,8 @@ final class ThumbnailProvider: QLThumbnailProvider {
 
     // MARK: - Text extraction
 
-    private static func stripFrontMatter(_ text: String) -> String {
-        guard text.hasPrefix("---") else { return text }
-        if let range = text.range(of: "\n---") {
-            var rest = String(text[text.index(after: range.upperBound)...])
-            if rest.hasPrefix("\n") { rest.removeFirst() }
-            return rest
-        }
-        return text
-    }
-
     private static func title(in raw: String) -> String {
-        for line in stripFrontMatter(raw).components(separatedBy: "\n") {
+        for line in MarkdownText.stripFrontMatter(raw).components(separatedBy: "\n") {
             let s = line.trimmingCharacters(in: .whitespaces)
             if s.isEmpty { continue }
             if s.hasPrefix("#") {
@@ -58,7 +48,7 @@ final class ThumbnailProvider: QLThumbnailProvider {
 
     private static func snippet(in raw: String) -> String {
         var lines: [String] = []
-        for line in stripFrontMatter(raw).components(separatedBy: "\n") {
+        for line in MarkdownText.stripFrontMatter(raw).components(separatedBy: "\n") {
             let s = line.trimmingCharacters(in: .whitespaces)
             if s.isEmpty || s.hasPrefix("#") || s.hasPrefix("```") || s == "---" { continue }
             let p = plain(s)

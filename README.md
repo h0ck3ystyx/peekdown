@@ -1,4 +1,4 @@
-# MarkdownPreview
+# Peekdown
 
 A native macOS Quick Look extension that renders Markdown (`.md`, `.markdown`, `.mdown`, `.mkd`, `.mkdn`) as formatted documents when you press **Space** in Finder — headings, lists, tables, code, and more — plus a styled thumbnail for the Finder preview pane.
 
@@ -20,6 +20,21 @@ Markdown is parsed to an `NSAttributedString` in Swift and drawn with AppKit. No
 - Light and dark mode (system label colors).
 - The host app declares the `net.daringfireball.markdown` UTI so Finder routes `.md` files to this extension.
 
+## Distribution releases
+
+Use [RELEASE.md](RELEASE.md) for Developer ID certificate setup and the signed,
+notarized ZIP and `.pkg` pipeline. The release build supports Intel and Apple Silicon.
+Development signing and ad-hoc builds below are for local use.
+
+For installation without administrator access, extract the release ZIP, move
+`Peekdown.app` into `~/Applications` (create the folder if needed), and launch it
+once. Select a Markdown file in Finder and press Space. You may need to enable
+the Quick Look extension in System Settings.
+
+Peekdown was previously named MarkdownPreview. After installing Peekdown, remove
+the old `MarkdownPreview.app` copy to avoid duplicate extension registrations.
+The bundle identifiers retain `com.markdownpreview` for signing continuity.
+
 ## Requirements
 
 - macOS 12.0+
@@ -33,7 +48,8 @@ Markdown is parsed to an `NSAttributedString` in Swift and drawn with AppKit. No
 
 ### 1. Configure signing
 
-Edit `DEVELOPMENT_TEAM` in `project.yml` to your own team ID. Find it with:
+Set your development team when building (or edit `DEVELOPMENT_TEAM` in
+`project.yml`). Find your team ID with:
 
 ```bash
 defaults read com.apple.dt.Xcode | grep -A4 IDEProvisioningTeamByIdentifier
@@ -42,11 +58,11 @@ defaults read com.apple.dt.Xcode | grep -A4 IDEProvisioningTeamByIdentifier
 ### 2. Build (Xcode)
 
 ```bash
-cd MarkdownPreview
+cd peekdown
 xcodegen generate
-xcodebuild -project MarkdownPreview.xcodeproj \
-  -scheme MarkdownPreview -configuration Release \
-  -derivedDataPath ./build build
+xcodebuild -project Peekdown.xcodeproj \
+  -scheme Peekdown -configuration Release \
+  -derivedDataPath ./build DEVELOPMENT_TEAM=YOUR_TEAM_ID -allowProvisioningUpdates build
 ```
 
 The first build generates the `Apple Development` certificate and provisioning profiles automatically.
@@ -54,19 +70,19 @@ The first build generates the `Apple Development` certificate and provisioning p
 ### 3. Install
 
 ```bash
-ditto build/Build/Products/Release/MarkdownPreview.app /Applications/MarkdownPreview.app
-/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f -R /Applications/MarkdownPreview.app
-pluginkit -a /Applications/MarkdownPreview.app/Contents/PlugIns/PreviewExtension.appex
-pluginkit -a /Applications/MarkdownPreview.app/Contents/PlugIns/ThumbnailExtension.appex
+ditto build/Build/Products/Release/Peekdown.app /Applications/Peekdown.app
+/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f -R /Applications/Peekdown.app
+pluginkit -a /Applications/Peekdown.app/Contents/PlugIns/PreviewExtension.appex
+pluginkit -a /Applications/Peekdown.app/Contents/PlugIns/ThumbnailExtension.appex
 killall quicklookd; qlmanage -r; qlmanage -r cache
-open /Applications/MarkdownPreview.app
+open /Applications/Peekdown.app
 ```
 
 Then select any `.md` file in Finder and press **Space**.
 
 ### Command-Line-Tools-only fallback (`build.sh`)
 
-`build.sh` compiles everything with `swiftc` and ad-hoc-signs it. It produces a working **thumbnail** extension, but the preview extension will not register under ad-hoc signing — use the Xcode path above for previews.
+`./build.sh` compiles universal Intel/Apple Silicon binaries with `swiftc` and ad-hoc-signs them at `build/local/Peekdown.app`. Ad-hoc builds are for compilation and local checks; use development signing for Finder testing or `./release.sh` for distribution. The release pipeline uses the same compiler path with Developer ID signing, so it does not require XcodeGen.
 
 ## How it works
 
@@ -82,7 +98,7 @@ Three targets live inside a single app:
 
 | Target | Type | Purpose |
 |---|---|---|
-| `MarkdownPreview` | macOS app | Registers the markdown UTI; hosts the extensions |
+| `Peekdown` | macOS app | Registers the markdown UTI; hosts the extensions |
 | `PreviewExtension` | Quick Look preview (`.appex`) | Renders the document on Space |
 | `ThumbnailExtension` | Quick Look thumbnail (`.appex`) | Draws the Finder thumbnail card |
 
@@ -92,8 +108,13 @@ Three targets live inside a single app:
 
 ```
 project.yml              # XcodeGen spec — source of truth for the .xcodeproj
-build.sh                 # CLT-only build fallback (ad-hoc signed)
-MarkdownPreview/         # host app (SwiftUI)
+build.sh                 # universal build (ad-hoc by default)
+release.sh               # Developer ID signing, notarization, signed .pkg
+RELEASE.md               # certificates and release instructions
+Shared/                  # shared front-matter parser
+Tests/                   # parser and renderer regressions
+scripts/                 # test runner and installer packaging
+Peekdown/         # host app (SwiftUI)
 PreviewExtension/        # Quick Look preview extension + MarkdownRenderer
 ThumbnailExtension/      # Quick Look thumbnail extension
 Packaging/               # hand-written plists used by build.sh
@@ -101,6 +122,10 @@ Packaging/               # hand-written plists used by build.sh
 
 ## Notes & caveats
 
-- **Free Personal Team certificates expire after ~7 days.** When previews stop working, rebuild and re-sign — Xcode re-issues the certificate automatically.
+- Development provisioning can expire; rebuild through Xcode if a local development installation stops working. Use Developer ID signing and notarization for distribution.
 - `qlmanage -p` (the CLI preview tool) crashes on macOS 26/27 for extension-based previews (`key cannot be nil`); it is a legacy-tool limitation, not a bug here. Verify previews via Finder Space; use `qlmanage -t` for thumbnails.
 - The table renderer caps its width to the panel and word-wraps cells; very long unbreakable tokens (e.g. long filenames) may split mid-token.
+
+## License
+
+Peekdown is available under the [MIT License](LICENSE).

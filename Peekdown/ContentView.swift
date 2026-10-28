@@ -8,7 +8,7 @@ struct ContentView: View {
                     .font(.system(size: 44))
                     .foregroundColor(.accentColor)
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Markdown Preview")
+                    Text("Peekdown")
                         .font(.largeTitle.bold())
                     Text("Quick Look for Markdown files")
                         .font(.subheadline)

@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct MarkdownPreviewApp: App {
+struct PeekdownApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()

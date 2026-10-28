@@ -1,16 +1,13 @@
 import AppKit
 
 /// Renders Markdown to an NSAttributedString using only AppKit — no WebKit,
-/// no JavaScript, no HTML importer. This keeps the preview working inside the
-/// Quick Look extension sandbox with ad-hoc code signing.
+/// no JavaScript, no HTML importer. Rendering stays inside the extension sandbox.
 enum MarkdownRenderer {
 
     // MARK: - Public entry point
 
     static func attributedString(from source: String, fontSize: CGFloat = 14) -> NSAttributedString {
-        let normalized = stripFrontMatter(source)
-            .replacingOccurrences(of: "\r\n", with: "\n")
-            .replacingOccurrences(of: "\r", with: "\n")
+        let normalized = MarkdownText.stripFrontMatter(source)
         let lines = normalized.components(separatedBy: "\n")
         let out = NSMutableAttributedString()
         var i = 0
@@ -107,18 +104,6 @@ enum MarkdownRenderer {
         }
 
         return out
-    }
-
-    // MARK: - Front matter
-
-    private static func stripFrontMatter(_ text: String) -> String {
-        guard text.hasPrefix("---") else { return text }
-        if let range = text.range(of: "\n---") {
-            var rest = String(text[text.index(after: range.upperBound)...])
-            if rest.hasPrefix("\n") { rest.removeFirst() }
-            return rest
-        }
-        return text
     }
 
     // MARK: - Block-level matchers

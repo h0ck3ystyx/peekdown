@@ -1,4 +1,4 @@
-name: MarkdownPreview
+name: Peekdown
 options:
   bundleIdPrefix: com.markdownpreview
   deploymentTarget:
@@ -9,21 +9,26 @@ settings:
   base:
     SWIFT_VERSION: "5.0"
     CODE_SIGN_STYLE: Automatic
-    DEVELOPMENT_TEAM: "7ZH96S5LF4"
+    DEVELOPMENT_TEAM: ""
     MACOSX_DEPLOYMENT_TARGET: "12.0"
     GENERATE_INFOPLIST_FILE: NO
+    ENABLE_HARDENED_RUNTIME: YES
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
 
 targets:
-  MarkdownPreview:
+  Peekdown:
     type: application
     platform: macOS
     sources:
-      - path: MarkdownPreview
+      - path: LICENSE
+        buildPhase: resources
+      - path: Peekdown
         excludes:
           - "Info.plist"
           - "*.entitlements"
     info:
-      path: MarkdownPreview/Info.plist
+      path: Peekdown/Info.plist
       properties:
         LSMinimumSystemVersion: "$(MACOSX_DEPLOYMENT_TARGET)"
         NSPrincipalClass: NSApplication
@@ -41,7 +46,7 @@ targets:
               public.filename-extension: [md, markdown, mdown, mkd, mkdn]
               public.mime-type: text/markdown
     entitlements:
-      path: MarkdownPreview/MarkdownPreview.entitlements
+      path: Peekdown/Peekdown.entitlements
       properties:
         com.apple.security.app-sandbox: true
         com.apple.security.files.user-selected.read-only: true
@@ -55,12 +60,13 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.markdownpreview.app
-        PRODUCT_NAME: MarkdownPreview
+        PRODUCT_NAME: Peekdown
 
   PreviewExtension:
     type: app-extension
     platform: macOS
     sources:
+      - path: Shared
       - path: PreviewExtension
         excludes:
           - "Info.plist"
@@ -68,12 +74,12 @@ targets:
     info:
       path: PreviewExtension/Info.plist
       properties:
-        CFBundleDisplayName: Markdown Preview
+        CFBundleDisplayName: Peekdown Preview
         LSMinimumSystemVersion: "$(MACOSX_DEPLOYMENT_TARGET)"
         NSExtension:
           NSExtensionAttributes:
             QLIsDataBasedPreview: false
-            QLSupportedContentTypes: [net.daringfireball.markdown, public.markdown, com.unknown.md, public.plain-text]
+            QLSupportedContentTypes: [net.daringfireball.markdown, public.markdown]
             QLSupportsSearchableItems: false
           NSExtensionPointIdentifier: com.apple.quicklook.preview
           NSExtensionPrincipalClass: "$(PRODUCT_MODULE_NAME).PreviewViewController"
@@ -92,6 +98,7 @@ targets:
     type: app-extension
     platform: macOS
     sources:
+      - path: Shared
       - path: ThumbnailExtension
         excludes:
           - "Info.plist"
@@ -99,11 +106,11 @@ targets:
     info:
       path: ThumbnailExtension/Info.plist
       properties:
-        CFBundleDisplayName: Markdown Thumbnail
+        CFBundleDisplayName: Peekdown Thumbnail
         LSMinimumSystemVersion: "$(MACOSX_DEPLOYMENT_TARGET)"
         NSExtension:
           NSExtensionAttributes:
-            QLSupportedContentTypes: [net.daringfireball.markdown, public.markdown, com.unknown.md, public.plain-text]
+            QLSupportedContentTypes: [net.daringfireball.markdown, public.markdown]
             QLThumbnailMinimumDimension: 0
           NSExtensionPointIdentifier: com.apple.quicklook.thumbnail
           NSExtensionPrincipalClass: "$(PRODUCT_MODULE_NAME).ThumbnailProvider"
@@ -119,10 +126,10 @@ targets:
         SKIP_INSTALL: YES
 
 schemes:
-  MarkdownPreview:
+  Peekdown:
     build:
       targets:
-        MarkdownPreview: all
+        Peekdown: all
     run:
       config: Debug
     archive:

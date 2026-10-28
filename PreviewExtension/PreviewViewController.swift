@@ -2,8 +2,7 @@ import Cocoa
 import QuickLookUI
 
 /// View-based Quick Look preview: renders Markdown to NSAttributedString and
-/// shows it in an NSTextView. No WebKit / JavaScript, so it works inside the
-/// Quick Look sandbox with ad-hoc code signing.
+/// shows it in an NSTextView without WebKit or JavaScript.
 final class PreviewViewController: NSViewController, QLPreviewingController {
 
     private let textView = NSTextView()
@@ -33,11 +32,11 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
     }
 
     func preparePreviewOfFile(at url: URL, completionHandler handler: @escaping (Error?) -> Void) {
-        // We also claim public.plain-text (to win the .md UTI), so decline
-        // any non-Markdown file and let macOS fall back to its own preview.
+        // Reject unexpected requests rather than reporting an empty successful preview.
         let ext = url.pathExtension.lowercased()
         guard ["md", "markdown", "mdown", "mkd", "mkdn"].contains(ext) else {
-            handler(nil)
+            handler(NSError(domain: NSCocoaErrorDomain, code: NSFileReadUnknownError,
+                            userInfo: [NSLocalizedDescriptionKey: "Unsupported file type"]))
             return
         }
         let raw: String

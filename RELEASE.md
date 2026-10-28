@@ -1,0 +1,135 @@
+# Signed installer releases
+
+The direct-distribution pipeline is `./release.sh`. It builds universal arm64/x86_64
+binaries for macOS 12+, signs the two extensions before the host app with hardened
+runtime and secure timestamps, notarizes and staples the app, creates a signed
+installer, then notarizes, staples, and assesses that installer. The installer
+places the app at `/Applications/Peekdown.app`; upgrades replace that app
+rather than relocating to another copy. It has no privileged registration scripts.
+It also creates a ZIP of the signed, stapled app for installing in
+`~/Applications` without administrator access.
+
+## One-time certificate setup
+
+Use an active paid Apple Developer Program membership. For locally managed
+Developer ID certificates, Apple requires the Account Holder role. The existing
+Apple Development and Apple Distribution certificates are different certificate
+types and cannot replace these.
+
+1. On the Mac that will sign releases, open **Keychain Access → Certificate
+   Assistant → Request a Certificate From a Certificate Authority**. Enter your
+   email and name, leave CA Email Address empty, and select **Saved to disk**.
+   This creates the private key locally and saves a `.certSigningRequest` file.
+2. Sign in to [Certificates, Identifiers & Profiles](https://developer.apple.com/account/resources/certificates/list)
+   using the Account Holder account. Select your intended developer team.
+3. Click **+**, select **Developer ID Application**, and follow the CSR upload
+   instructions. Download the `.cer` and double-click it on the same Mac.
+4. Repeat for **Developer ID Installer**. Both certificates must use the same team.
+5. In Keychain Access → My Certificates, each certificate must expand to show
+   its private key. A downloaded certificate alone is insufficient. If signing on
+   another Mac, export each identity with its private key as a password-protected
+   `.p12` and import it there. Keep certificates, private keys, and passwords out
+   of the repository.
+6. Confirm the exact identity names:
+
+   ```bash
+   security find-identity -v -p codesigning
+   security find-identity -v -p basic
+   ```
+
+   Expected names include `Developer ID Application: YOUR_NAME (YOUR_TEAM_ID)`
+   and `Developer ID Installer: YOUR_NAME (YOUR_TEAM_ID)`. Use the actual names
+   printed on your Mac. If a certificate is not valid, check its private key,
+   expiration, and Apple intermediate certificate chain; do not override trust.
+
+[Apple's Developer ID certificate instructions](https://developer.apple.com/help/account/certificates/create-developer-id-certificates/).
+
+## One-time notarization credentials
+
+Create an app-specific password at [Apple Account](https://account.apple.com/).
+Save it in Keychain using the following command, which prompts for the password:
+
+```bash
+xcrun notarytool store-credentials Peekdown-notary \
+  --apple-id 'YOUR_APPLE_ACCOUNT_EMAIL' \
+  --team-id 'YOUR_TEAM_ID'
+```
+
+Do not use your regular Apple Account password. The release script reads the
+saved profile; it never needs a password in source files or environment variables.
+`notarytool` also supports storing App Store Connect API key credentials if your
+organization uses those instead.
+
+## Build a release
+
+Run from the repository root on a Mac with Xcode or compatible Command Line Tools
+containing `swiftc`, `lipo`, `notarytool`, and `stapler`. XcodeGen is only needed for
+the separate Xcode project workflow, not this pipeline.
+
+```bash
+export APPLICATION_IDENTITY='Developer ID Application: YOUR_NAME (YOUR_TEAM_ID)'
+export INSTALLER_IDENTITY='Developer ID Installer: YOUR_NAME (YOUR_TEAM_ID)'
+export NOTARY_PROFILE='Peekdown-notary'
+export VERSION='1.0.1'
+export BUILD_NUMBER='2'
+
+./release.sh --check
+./release.sh
+```
+
+Increase the version/build for subsequent releases. `--check` checks tools,
+local signing identities, and notarization credentials using Apple's submission
+history service. A real release uploads the signed app and installer to Apple.
+Notarization may take time. The script fails on rejected submissions, invalid
+signatures, missing timestamps/runtime, mismatched teams, or failed assessments.
+
+Successful output is in `build/releases/1.0.1-2/`:
+
+- `Peekdown-1.0.1.pkg` — distribute this signed, stapled installer.
+- `Peekdown-1.0.1.zip` — the signed, stapled app for manual user installation.
+- `SHA256SUMS` — checksums of the final installer and ZIP.
+- `Peekdown.app` — signed and stapled app contained in the installer.
+- Submission results and Apple's notarization logs for both submissions.
+
+An existing release directory is not overwritten. Failed release files remain
+for diagnosis. A failure after submission may still leave Apple processing the
+upload. Use the ID from `app-notary.plist` or `installer-notary.plist`:
+
+```bash
+xcrun notarytool info SUBMISSION_ID --keychain-profile Peekdown-notary
+xcrun notarytool log SUBMISSION_ID --keychain-profile Peekdown-notary build/notary-log.json
+```
+
+After diagnosing a failure, choose a new build number or move the failed release
+directory before rerunning. Never distribute an artifact from a failed run.
+
+[Apple's notarization workflow](https://developer.apple.com/documentation/security/customizing-the-notarization-workflow).
+
+## Local verification without certificates
+
+```bash
+./scripts/test.sh
+./build.sh
+./scripts/package.sh build/local/Peekdown.app build/Peekdown-local.pkg
+```
+
+These commands exercise the parser, compile both architectures, verify ad-hoc
+signatures, and create an **unsigned test installer**. Ad-hoc builds are not
+release artifacts and do not validate Finder preview activation. If installer
+signing is desired, `scripts/package.sh` reads `INSTALLER_IDENTITY` when set.
+
+## Release acceptance
+
+After a successful signed release, install the `.pkg` on a clean Mac or VM with
+normal Gatekeeper settings. Launch the app once from Applications. Enable its
+Quick Look extensions in System Settings if macOS requests it. Check Finder Space
+previews and thumbnails for each supported extension, dark/light mode, front
+matter ending at EOF, and unrelated `.txt` files. Test an upgrade over the previous
+version and verify offline opening after tickets have been stapled. Test Intel
+and Apple Silicon machines and the oldest supported macOS version before claiming
+that compatibility. Compilation and signature verification alone do not establish
+runtime compatibility or successful extension discovery.
+
+This is a local release pipeline. For future CI, import both password-protected
+signing identities into a temporary runner Keychain and provide a notarization
+profile there, then run the same script. No signing credentials are committed.

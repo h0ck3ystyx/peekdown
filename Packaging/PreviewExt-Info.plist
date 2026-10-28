@@ -5,7 +5,7 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
     <key>CFBundleDisplayName</key>
-    <string>Markdown Preview</string>
+    <string>Peekdown Preview</string>
     <key>CFBundleExecutable</key>
     <string>PreviewExtension</string>
     <key>CFBundleIdentifier</key>
@@ -32,7 +32,6 @@
             <array>
                 <string>net.daringfireball.markdown</string>
                 <string>public.markdown</string>
-                <string>com.unknown.md</string>
             </array>
             <key>QLSupportsSearchableItems</key>
             <false/>
