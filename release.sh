@@ -18,6 +18,7 @@ TEAM="${APPLICATION_IDENTITY##* (}"
 TEAM="${TEAM%)}"
 [[ "$TEAM" =~ ^[A-Z0-9]{10}$ && "$INSTALLER_IDENTITY" == *" ($TEAM)" ]] || { echo 'Certificates must belong to the same team' >&2; exit 1; }
 for tool in swiftc lipo notarytool stapler; do xcrun --find "$tool" >/dev/null; done
+for tool in pkgbuild productbuild; do command -v "$tool" >/dev/null; done
 for identity in "$APPLICATION_IDENTITY" "$INSTALLER_IDENTITY"; do
     if ! security find-identity -v -p basic | grep -F -- "\"$identity\"" >/dev/null; then
         echo "Missing valid certificate with private key: $identity. See RELEASE.md." >&2; exit 1
@@ -80,6 +81,7 @@ spctl --assess --type execute --verbose=2 "$APP"
 ditto -c -k --sequesterRsrc --keepParent "$APP" "$OUT/Peekdown-$VERSION.zip"
 PKG="$OUT/Peekdown-$VERSION.pkg"
 ./scripts/package.sh "$APP" "$PKG"
+./scripts/test-package.sh "$PKG"
 pkgutil --check-signature "$PKG"
 notarize "$PKG" installer
 xcrun stapler staple "$PKG"

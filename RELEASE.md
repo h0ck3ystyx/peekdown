@@ -4,8 +4,13 @@ The direct-distribution pipeline is `./release.sh`. It builds universal arm64/x8
 binaries for macOS 12+, signs the two extensions before the host app with hardened
 runtime and secure timestamps, notarizes and staples the app, creates a signed
 installer, then notarizes, staples, and assesses that installer. The installer
-places the app at `/Applications/Peekdown.app`; upgrades replace that app
-rather than relocating to another copy. It has no privileged registration scripts.
+offers two installation destinations: **Install for me only** places the app at
+`~/Applications/Peekdown.app` without administrator authorization; **Install for
+all users of this computer** places it at `/Applications/Peekdown.app` with
+administrator authorization. If Installer skips Destination Select, use
+**Change Install Location…** on the Installation Type screen. Upgrades replace
+the app in the selected domain rather than relocating to another copy.
+It has no privileged registration scripts.
 It also creates a ZIP of the signed, stapled app for installing in
 `~/Applications` without administrator access.
 
@@ -63,7 +68,8 @@ organization uses those instead.
 ## Build a release
 
 Run from the repository root on a Mac with Xcode or compatible Command Line Tools
-containing `swiftc`, `lipo`, `notarytool`, and `stapler`. XcodeGen is only needed for
+containing `swiftc`, `lipo`, `notarytool`, and `stapler`, plus macOS `pkgbuild` and
+`productbuild`. XcodeGen is only needed for
 the separate Xcode project workflow, not this pipeline.
 
 ```bash
@@ -111,6 +117,7 @@ directory before rerunning. Never distribute an artifact from a failed run.
 ./scripts/test.sh
 ./build.sh
 ./scripts/package.sh build/local/Peekdown.app build/Peekdown-local.pkg
+./scripts/test-package.sh build/Peekdown-local.pkg
 ```
 
 These commands exercise the parser, compile both architectures, verify ad-hoc
@@ -120,12 +127,19 @@ signing is desired, `scripts/package.sh` reads `INSTALLER_IDENTITY` when set.
 
 ## Release acceptance
 
-After a successful signed release, install the `.pkg` on a clean Mac or VM with
-normal Gatekeeper settings. Launch the app once from Applications. Enable its
+After a successful signed release, test both destinations on a clean Mac or VM
+with normal Gatekeeper settings. Use a standard (non-admin) account for **Install
+for me only** and confirm there is no administrator prompt, the app is owned by
+that user, and no files are written outside their home folder. Confirm **Install
+for all users** requests administrator authorization and installs to
+`/Applications`. Launch the app once from the selected Applications folder. Enable its
 Quick Look extensions in System Settings if macOS requests it. Check Finder Space
 previews and thumbnails for each supported extension, dark/light mode, front
 matter ending at EOF, and unrelated `.txt` files. Test an upgrade over the previous
-version and verify offline opening after tickets have been stapled. Test Intel
+version in each domain and verify offline opening after tickets have been stapled.
+When switching domains, remove the previous app copy to prevent duplicate
+extension registrations; a personal install does not remove a shared installation.
+Test Intel
 and Apple Silicon machines and the oldest supported macOS version before claiming
 that compatibility. Compilation and signature verification alone do not establish
 runtime compatibility or successful extension discovery.

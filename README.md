@@ -26,6 +26,11 @@ Use [RELEASE.md](RELEASE.md) for Developer ID certificate setup and the signed,
 notarized ZIP and `.pkg` pipeline. The release build supports Intel and Apple Silicon.
 Development signing and ad-hoc builds below are for local use.
 
+The `.pkg` offers **Install for me only** (`~/Applications`, no admin password)
+and **Install for all users of this computer** (`/Applications`, administrator
+authorization). Use **Change Install Location…** if Installer skips the
+destination screen.
+
 For installation without administrator access, extract the release ZIP, move
 `Peekdown.app` into `~/Applications` (create the folder if needed), and launch it
 once. Select a Markdown file in Finder and press Space. You may need to enable
