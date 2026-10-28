@@ -80,7 +80,16 @@ let linkTests: [LinkTest] = [
 
 for test in linkTests {
     let result = MarkdownRenderer.attributedString(from: test.markdown)
-    let hasLink = result.attribute(.link, at: 0, effectiveRange: nil) != nil
+    var hasLink = false
+    if result.length > 0 {
+        // Find if any character in the string has a link attribute
+        result.enumerateAttribute(.link, in: NSRange(location: 0, length: result.length), options: []) { value, range, stop in
+            if value != nil {
+                hasLink = true
+                stop.pointee = true
+            }
+        }
+    }
     precondition(hasLink == test.shouldBeClickable,
                  "Link test failed for \(test.description): expected clickable=\(test.shouldBeClickable), got \(hasLink)")
 }
