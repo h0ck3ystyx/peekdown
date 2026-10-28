@@ -1,5 +1,52 @@
 # Signed installer releases
 
+## Version management
+
+The app version is maintained in a single `VERSION` file at the repository root.
+All build scripts, plists, and project files derive their version from this source.
+
+### Bumping the version
+
+To bump the version for a new release:
+
+1. Update the `VERSION` file with the new marketing version (e.g., `1.0.3`):
+   ```bash
+   echo '1.0.3' > VERSION
+   ```
+
+2. Run the sync script to update `project.yml` and plist files:
+   ```bash
+   ./scripts/sync-version.sh [BUILD_NUMBER]
+   ```
+   The build number defaults to `1` if not specified. For subsequent builds of
+   the same version, increment it (e.g., `./scripts/sync-version.sh 2`).
+
+3. Commit the version changes:
+   ```bash
+   git add VERSION project.yml Packaging/*.plist
+   git commit -m "Bump version to 1.0.3"
+   ```
+
+4. Tag the release:
+   ```bash
+   git tag v1.0.3
+   git push origin main --tags
+   ```
+
+The GitHub release workflow validates that the git tag matches the `VERSION` file
+and will fail with a clear message if they don't match.
+
+### Build number derivation
+
+- **Development builds** (`./build.sh`): Build number is automatically derived
+  from the git commit count (`git rev-list --count HEAD`) if not explicitly set.
+- **Release builds** (`./release.sh`): Build number must be explicitly set via
+  the `BUILD_NUMBER` environment variable, as documented below.
+- **XcodeGen builds**: Use the `CURRENT_PROJECT_VERSION` from `project.yml`,
+  which should be synced using `./scripts/sync-version.sh`.
+
+## Release pipeline
+
 The direct-distribution pipeline is `./release.sh`. It builds universal arm64/x86_64
 binaries for macOS 12+, signs the two extensions before the host app with hardened
 runtime and secure timestamps, notarizes and staples the app, creates a signed
@@ -72,14 +119,23 @@ containing `swiftc`, `lipo`, `notarytool`, and `stapler`, plus macOS `pkgbuild` 
 `productbuild`. XcodeGen is only needed for
 the separate Xcode project workflow, not this pipeline.
 
+The `VERSION` is read from the `VERSION` file if not explicitly set. You must
+set `BUILD_NUMBER` explicitly for release builds:
+
 ```bash
 export APPLICATION_IDENTITY='Developer ID Application: YOUR_NAME (YOUR_TEAM_ID)'
 export INSTALLER_IDENTITY='Developer ID Installer: YOUR_NAME (YOUR_TEAM_ID)'
 export NOTARY_PROFILE='Peekdown-notary'
-export VERSION='1.0.1'
 export BUILD_NUMBER='2'
 
 ./release.sh --check
+./release.sh
+```
+
+To override the VERSION file, export `VERSION` before running:
+```bash
+export VERSION='1.0.3'
+export BUILD_NUMBER='1'
 ./release.sh
 ```
 

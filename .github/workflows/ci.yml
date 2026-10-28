@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  validate-versions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate version consistency
+        run: |
+          set -e
+          
+          VERSION=$(cat VERSION | tr -d '[:space:]')
+          echo "VERSION file: $VERSION"
+          
+          # Check project.yml
+          MARKETING_VERSION=$(grep 'MARKETING_VERSION:' project.yml | sed 's/.*MARKETING_VERSION: "\(.*\)"/\1/')
+          echo "project.yml MARKETING_VERSION: $MARKETING_VERSION"
+          
+          if [ "$VERSION" != "$MARKETING_VERSION" ]; then
+            echo "❌ Error: VERSION file ($VERSION) doesn't match project.yml MARKETING_VERSION ($MARKETING_VERSION)"
+            echo "Run: ./scripts/sync-version.sh"
+            exit 1
+          fi
+          
+          # Check Packaging plist files
+          for plist in Packaging/App-Info.plist Packaging/PreviewExt-Info.plist Packaging/ThumbExt-Info.plist; do
+            PLIST_VERSION=$(grep -A1 'CFBundleShortVersionString' "$plist" | tail -1 | sed 's/.*<string>\(.*\)<\/string>/\1/' | tr -d '[:space:]')
+            echo "$plist: $PLIST_VERSION"
+            
+            if [ "$VERSION" != "$PLIST_VERSION" ]; then
+              echo "❌ Error: VERSION file ($VERSION) doesn't match $plist ($PLIST_VERSION)"
+              echo "Run: ./scripts/sync-version.sh"
+              exit 1
+            fi
+          done
+          
+          echo "✓ All version strings are consistent with VERSION file"
+
+  test:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run tests
+        run: |
+          if [ -f scripts/test.sh ]; then
+            ./scripts/test.sh
+          else
+            echo "No test script found, skipping tests"
+          fi
+
+      - name: Test build
+        run: |
+          ./build.sh
+          
+          # Verify the built app has the correct version
+          VERSION=$(cat VERSION | tr -d '[:space:]')
+          BUILT_VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' build/local/Peekdown.app/Contents/Info.plist)
+          
+          echo "Expected version: $VERSION"
+          echo "Built app version: $BUILT_VERSION"
+          
+          if [ "$VERSION" != "$BUILT_VERSION" ]; then
+            echo "❌ Error: Built app version ($BUILT_VERSION) doesn't match VERSION file ($VERSION)"
+            exit 1
+          fi
+          
+          echo "✓ Build successful with correct version"

@@ -1,0 +1,53 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  validate-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate tag matches VERSION
+        run: |
+          VERSION=$(cat VERSION | tr -d '[:space:]')
+          TAG=${GITHUB_REF#refs/tags/v}
+          
+          echo "VERSION file contains: $VERSION"
+          echo "Git tag is: $TAG"
+          
+          if [ "$VERSION" != "$TAG" ]; then
+            echo "❌ Error: Git tag v$TAG does not match VERSION file ($VERSION)"
+            echo ""
+            echo "Before pushing a release tag, update the VERSION file:"
+            echo "  1. echo '$TAG' > VERSION"
+            echo "  2. ./scripts/sync-version.sh"
+            echo "  3. git add VERSION project.yml Packaging/*.plist"
+            echo "  4. git commit -m 'Bump version to $TAG'"
+            echo "  5. git tag v$TAG"
+            echo "  6. git push origin main --tags"
+            exit 1
+          fi
+          
+          echo "✓ Git tag v$TAG matches VERSION file"
+
+  update-homebrew-tap:
+    needs: validate-version
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Update Homebrew tap
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "Release v$VERSION created"
+          echo "Manual step: Update Homebrew tap with new version and SHA256 checksum"
+          echo "The tap repository should be updated after the signed release artifacts are uploaded"
