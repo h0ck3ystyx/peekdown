@@ -65,7 +65,7 @@ saved profile; it never needs a password in source files or environment variable
 `notarytool` also supports storing App Store Connect API key credentials if your
 organization uses those instead.
 
-## Build a release
+### Local release build
 
 Run from the repository root on a Mac with Xcode or compatible Command Line Tools
 containing `swiftc`, `lipo`, `notarytool`, and `stapler`, plus macOS `pkgbuild` and
@@ -144,6 +144,90 @@ and Apple Silicon machines and the oldest supported macOS version before claimin
 that compatibility. Compilation and signature verification alone do not establish
 runtime compatibility or successful extension discovery.
 
-This is a local release pipeline. For future CI, import both password-protected
-signing identities into a temporary runner Keychain and provide a notarization
-profile there, then run the same script. No signing credentials are committed.
+## Automated releases with GitHub Actions
+
+Push a tag matching `v*` (e.g., `v1.0.3`) to trigger an automated release. The
+workflow imports signing certificates into a temporary keychain, runs `./release.sh`,
+publishes a GitHub Release with the signed `.pkg`, `.zip`, and `SHA256SUMS`, and
+updates the Homebrew tap's cask formula. No signing credentials are committed.
+
+### Required GitHub Actions secrets
+
+Create these secrets at **Settings → Secrets and variables → Actions → New repository secret**:
+
+#### `APPLICATION_CERT_BASE64`
+Base64-encoded `.p12` file containing your **Developer ID Application** certificate
+and its private key. Export from Keychain Access:
+1. In Keychain Access → My Certificates, expand **Developer ID Application: YOUR_NAME (TEAMID)**
+2. Select both the certificate and its private key (shown below it)
+3. Right-click → Export 2 items, save as `.p12`, and set a strong password
+4. Encode: `base64 -i DeveloperIDApplication.p12 | pbcopy`
+5. Paste the base64 output into the secret value
+
+#### `INSTALLER_CERT_BASE64`
+Base64-encoded `.p12` file containing your **Developer ID Installer** certificate
+and its private key. Follow the same export and encoding steps as above for the
+**Developer ID Installer** identity.
+
+#### `CERT_PASSWORD`
+The password protecting both `.p12` files. Use the same password for both exports
+to simplify the workflow.
+
+#### `NOTARY_APPLE_ID`
+Your Apple ID email (the Account Holder or admin with notarization access).
+
+#### `NOTARY_APP_PASSWORD`
+An app-specific password for notarization. Generate one at
+[Apple Account](https://account.apple.com/) → Sign-In and Security → App-Specific Passwords.
+**Do not** use your regular Apple Account password.
+
+#### `NOTARY_TEAM_ID`
+Your 10-character Apple Developer team ID (the same `TEAMID` shown in your
+certificate names, e.g., `A1B2C3D4E5`).
+
+#### `HOMEBREW_TAP_TOKEN`
+A GitHub personal access token (classic) with `repo` scope that can push to
+`h0ck3ystyx/homebrew-tap`. Create one at **GitHub Settings → Developer settings →
+Personal access tokens → Tokens (classic) → Generate new token**. Select only
+the `repo` scope. The workflow uses this token to update the cask formula after
+each release.
+
+### Cutting a release
+
+```bash
+git tag v1.0.3
+git push origin v1.0.3
+```
+
+The workflow derives `VERSION=1.0.3` and `BUILD_NUMBER` from the tag and run number,
+runs the tests and release script, creates the GitHub Release, and updates the
+Homebrew tap. Monitor progress at **Actions → Release**. The release appears at
+`https://github.com/h0ck3ystyx/peekdown/releases/tag/v1.0.3`.
+
+If notarization or another step fails, delete the tag locally and remotely, fix
+the issue, and re-tag:
+
+```bash
+git tag -d v1.0.3
+git push origin :refs/tags/v1.0.3
+```
+
+Do not re-push the same tag after a failed release without cleaning up the
+partial GitHub Release and understanding the failure.
+
+## Local releases
+
+The direct-distribution pipeline is `./release.sh`. Use it for local testing or
+if GitHub Actions is unavailable. It builds universal arm64/x86_64
+binaries for macOS 12+, signs the two extensions before the host app with hardened
+runtime and secure timestamps, notarizes and staples the app, creates a signed
+installer, then notarizes, staples, and assesses that installer. The installer
+offers two installation destinations: **Install for me only** places the app at
+`~/Applications/Peekdown.app` without administrator authorization; **Install for
+all users of this computer** places it at `/Applications/Peekdown.app` with
+administrator authorization. If Installer skips Destination Select, use
+**Change Install Location…** on the Installation Type screen. Upgrades replace
+the app in the selected domain rather than relocating to another copy.
+It has no privileged registration scripts.
+It also creates a ZIP of the signed, stapled app for installing in
+`~/Applications` without administrator access.

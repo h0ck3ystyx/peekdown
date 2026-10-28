@@ -1,0 +1,159 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          echo "build_number=$GITHUB_RUN_NUMBER" >> $GITHUB_OUTPUT
+
+      - name: Set up signing certificates
+        env:
+          APPLICATION_CERT_BASE64: ${{ secrets.APPLICATION_CERT_BASE64 }}
+          INSTALLER_CERT_BASE64: ${{ secrets.INSTALLER_CERT_BASE64 }}
+          CERT_PASSWORD: ${{ secrets.CERT_PASSWORD }}
+        run: |
+          # Create a temporary keychain for the signing certificates
+          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
+          KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
+          
+          # Create and configure keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH" $(security list-keychains -d user | sed 's/"//g')
+          
+          # Import certificates
+          echo "$APPLICATION_CERT_BASE64" | base64 --decode > "$RUNNER_TEMP/app-cert.p12"
+          echo "$INSTALLER_CERT_BASE64" | base64 --decode > "$RUNNER_TEMP/installer-cert.p12"
+          
+          security import "$RUNNER_TEMP/app-cert.p12" -k "$KEYCHAIN_PATH" \
+            -P "$CERT_PASSWORD" -T /usr/bin/codesign -T /usr/bin/productsign
+          security import "$RUNNER_TEMP/installer-cert.p12" -k "$KEYCHAIN_PATH" \
+            -P "$CERT_PASSWORD" -T /usr/bin/codesign -T /usr/bin/productsign
+          
+          # Allow tools to use the keychain
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          
+          # Clean up certificate files
+          rm -f "$RUNNER_TEMP/app-cert.p12" "$RUNNER_TEMP/installer-cert.p12"
+          
+          # Save keychain info for cleanup
+          echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> $GITHUB_ENV
+          echo "KEYCHAIN_PASSWORD=$KEYCHAIN_PASSWORD" >> $GITHUB_ENV
+
+      - name: Set up notarization credentials
+        env:
+          NOTARY_APPLE_ID: ${{ secrets.NOTARY_APPLE_ID }}
+          NOTARY_APP_PASSWORD: ${{ secrets.NOTARY_APP_PASSWORD }}
+          NOTARY_TEAM_ID: ${{ secrets.NOTARY_TEAM_ID }}
+        run: |
+          # Store notarytool credentials in the default keychain
+          # (notarytool doesn't support specifying a different keychain for stored profiles)
+          xcrun notarytool store-credentials Peekdown-notary \
+            --apple-id "$NOTARY_APPLE_ID" \
+            --team-id "$NOTARY_TEAM_ID" \
+            --password "$NOTARY_APP_PASSWORD"
+
+      - name: Get certificate identities
+        id: identities
+        run: |
+          APP_IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN_PATH" | \
+            grep "Developer ID Application" | head -1 | sed -E 's/.*"(.*)"/\1/')
+          INSTALLER_IDENTITY=$(security find-identity -v -p basic "$KEYCHAIN_PATH" | \
+            grep "Developer ID Installer" | head -1 | sed -E 's/.*"(.*)"/\1/')
+          
+          echo "app_identity=$APP_IDENTITY" >> $GITHUB_OUTPUT
+          echo "installer_identity=$INSTALLER_IDENTITY" >> $GITHUB_OUTPUT
+          
+          echo "Application identity: $APP_IDENTITY"
+          echo "Installer identity: $INSTALLER_IDENTITY"
+
+      - name: Run tests
+        run: ./scripts/test.sh
+
+      - name: Build and sign release
+        env:
+          APPLICATION_IDENTITY: ${{ steps.identities.outputs.app_identity }}
+          INSTALLER_IDENTITY: ${{ steps.identities.outputs.installer_identity }}
+          NOTARY_PROFILE: Peekdown-notary
+          VERSION: ${{ steps.version.outputs.version }}
+          BUILD_NUMBER: ${{ steps.version.outputs.build_number }}
+        run: ./release.sh
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          TAG=${{ steps.version.outputs.tag }}
+          BUILD_NUMBER=${{ steps.version.outputs.build_number }}
+          RELEASE_DIR="build/releases/$VERSION-$BUILD_NUMBER"
+          
+          gh release create "$TAG" \
+            --title "Peekdown $VERSION" \
+            --notes "Release $VERSION
+
+          ## Installation
+
+          ### Homebrew (recommended)
+          \`\`\`bash
+          brew install --cask h0ck3ystyx/tap/peekdown
+          \`\`\`
+
+          ### Manual installation
+          - **Installer package**: Download \`Peekdown-$VERSION.pkg\` and run it
+          - **ZIP archive**: Download \`Peekdown-$VERSION.zip\`, extract, and move \`Peekdown.app\` to \`~/Applications\`
+
+          ## Checksums
+          See \`SHA256SUMS\` for verification." \
+            "$RELEASE_DIR/Peekdown-$VERSION.pkg" \
+            "$RELEASE_DIR/Peekdown-$VERSION.zip" \
+            "$RELEASE_DIR/SHA256SUMS"
+
+      - name: Update Homebrew tap
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          # Clone the tap repository
+          git clone "https://x-access-token:$HOMEBREW_TAP_TOKEN@github.com/h0ck3ystyx/homebrew-tap.git" "$RUNNER_TEMP/homebrew-tap"
+          cd "$RUNNER_TEMP/homebrew-tap"
+          
+          # Calculate SHA256 of the release ZIP
+          BUILD_NUMBER=${{ steps.version.outputs.build_number }}
+          ZIP_PATH="$GITHUB_WORKSPACE/build/releases/$VERSION-$BUILD_NUMBER/Peekdown-$VERSION.zip"
+          SHA256=$(shasum -a 256 "$ZIP_PATH" | awk '{print $1}')
+          
+          # Update the cask file
+          sed -i.bak "s/version \"[^\"]*\"/version \"$VERSION\"/" Casks/peekdown.rb
+          sed -i.bak "s/sha256 \"[^\"]*\"/sha256 \"$SHA256\"/" Casks/peekdown.rb
+          rm Casks/peekdown.rb.bak
+          
+          # Commit and push
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Casks/peekdown.rb
+          git commit -m "Update peekdown to $VERSION"
+          git push
+
+      - name: Clean up keychain
+        if: always()
+        run: |
+          if [ -n "${KEYCHAIN_PATH:-}" ]; then
+            security delete-keychain "$KEYCHAIN_PATH" || true
+          fi
