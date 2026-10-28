@@ -1,0 +1,536 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><title>Peekdown — Quick Look for Markdown</title><meta name="description" content="Read Markdown in Finder with Peekdown, a free, open-source macOS Quick Look extension. Signed downloads for Intel and Apple Silicon."></head><body>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: split hero (copy | live Finder + Quick Look demo), then a calm single-column story of features, install, playground, brand kit. Motion lives in the hero demo and the logo; everything else stays still. */
+:root{
+  --paper:#F2F4F8; --surface:#FFFFFF; --ink:#0F1726; --muted:#56627A; --line:#DDE2EB; --line-strong:#C3CAD7;
+  --accent:#2D5BFF; --accent-soft:#E3E9FF; --on-accent:#FFFFFF; --mark:#FFD84D; --mark-ink:#2A2100;
+  --win:#FBFCFE; --win-bar:#ECEFF4; --side:#F1F3F7; --ql:#FFFFFF; --shadow:0 30px 60px -20px rgba(15,23,38,.28),0 8px 18px -8px rgba(15,23,38,.18);
+  --code-bg:#0F1726; --code-fg:#E6EAF2; --tk-k:#FF8FB1; --tk-s:#9BE29B; --tk-c:#7D8AA5; --tk-f:#8FB4FF;
+  --f-display:"Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --f-body:"IBM Plex Sans", -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0A0E16; --surface:#121827; --ink:#E9EDF5; --muted:#97A2B8; --line:#222B3D; --line-strong:#323D54;
+  --accent:#6F8CFF; --accent-soft:#1A2448; --on-accent:#0A0E16; --mark:#FFD84D; --mark-ink:#2A2100;
+  --win:#151B29; --win-bar:#1C2333; --side:#111725; --ql:#1A2131; --shadow:0 30px 60px -20px rgba(0,0,0,.7),0 8px 18px -8px rgba(0,0,0,.5);
+  --code-bg:#070A11; --code-fg:#E6EAF2; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0A0E16; --surface:#121827; --ink:#E9EDF5; --muted:#97A2B8; --line:#222B3D; --line-strong:#323D54;
+  --accent:#6F8CFF; --accent-soft:#1A2448; --on-accent:#0A0E16; --mark:#FFD84D; --mark-ink:#2A2100;
+  --win:#151B29; --win-bar:#1C2333; --side:#111725; --ql:#1A2131; --shadow:0 30px 60px -20px rgba(0,0,0,.7),0 8px 18px -8px rgba(0,0,0,.5);
+  --code-bg:#070A11; --code-fg:#E6EAF2; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font:400 16px/1.6 var(--f-body);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:6px}
+.wrap{max-width:1160px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:-.02em}
+code,kbd,pre{font-family:var(--f-mono)}
+.eyebrow{font:600 12px/1 var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+
+/* header */
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:color-mix(in srgb,var(--paper) 86%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.nav{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:12px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;font:800 20px/1 var(--f-display);letter-spacing:-.03em}
+.brand svg{width:32px;height:32px}
+.links{display:flex;gap:22px;align-items:center;font-size:14px}
+.links a{text-decoration:none;color:var(--muted)}
+.links a:hover{color:var(--ink)}
+.gh{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid var(--line-strong);border-radius:999px;color:var(--ink)!important}
+@media (max-width:720px){.links a:not(.gh){display:none}}
+
+/* hero */
+.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.18fr);gap:56px;align-items:center;padding-block:64px 40px}
+.hero h1{font-size:clamp(2.6rem,6.2vw,4.8rem);line-height:.96;font-weight:800;letter-spacing:-.04em}
+.hl{background:linear-gradient(var(--mark),var(--mark)) no-repeat 0 88%/100% 38%;padding:0 .06em;animation:sweep 1.1s .35s cubic-bezier(.6,0,.2,1) both}
+@keyframes sweep{from{background-size:0% 38%}to{background-size:100% 38%}}
+.lede{font-size:1.14rem;color:var(--muted);max-width:34ch;margin:22px 0 28px}
+.lede code{font-size:.92em;color:var(--ink);background:var(--surface);border:1px solid var(--line);padding:1px 6px;border-radius:5px}
+.ctas{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.cmd{display:flex;align-items:center;gap:10px;background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:6px 6px 6px 14px;font:400 14px/1 var(--f-mono);max-width:100%;min-width:0}
+.cmd span{white-space:nowrap;overflow:auto;min-width:0}
+.cmd span::before{content:"$ ";color:var(--tk-c)}
+.copy{font:600 12px/1 var(--f-body);border:0;border-radius:7px;padding:9px 11px;background:var(--accent);color:var(--on-accent);cursor:pointer;flex:none}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 16px;border-radius:10px;border:1px solid var(--line-strong);text-decoration:none;font-weight:500;font-size:15px}
+.btn:hover{border-color:var(--ink)}
+.meta{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:22px;font:400 12.5px/1.4 var(--f-mono);color:var(--muted)}
+.meta b{color:var(--ink);font-weight:600}
+
+/* demo */
+.stage{position:relative;min-width:0}
+.win{position:relative;height:440px;border-radius:14px;background:var(--win);border:1px solid var(--line);box-shadow:var(--shadow);overflow:hidden;font-family:-apple-system,"SF Pro Text",var(--f-body);font-size:13px}
+.bar{height:40px;background:var(--win-bar);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;padding:0 14px}
+.dot{width:12px;height:12px;border-radius:50%;background:#FF5F57}.dot:nth-child(2){background:#FEBC2E}.dot:nth-child(3){background:#28C840}
+.bar .title{margin-left:14px;font-weight:600;font-size:13px;color:var(--ink)}
+.bar .path{margin-left:auto;color:var(--muted);font-size:12px}
+.finder{display:grid;grid-template-columns:150px minmax(0,1fr);height:calc(100% - 40px)}
+.side{background:var(--side);border-right:1px solid var(--line);padding:12px 10px;color:var(--muted);font-size:12px;display:flex;flex-direction:column;gap:6px}
+.side small{font-weight:600;font-size:10.5px;letter-spacing:.04em;opacity:.8;margin-top:6px}
+.side div{padding:4px 8px;border-radius:6px}.side .on{background:color-mix(in srgb,var(--ink) 9%,transparent);color:var(--ink)}
+.list{padding:8px 8px;min-width:0}
+.lh,.row{display:grid;grid-template-columns:22px minmax(0,1fr) 92px 70px;gap:8px;align-items:center;padding:5px 8px;border-radius:6px}
+.lh{color:var(--muted);font-size:11px;border-bottom:1px solid var(--line);border-radius:0;margin-bottom:4px}
+.row{color:var(--ink);transition:background .2s,color .2s}
+.row:nth-child(odd of .row){background:color-mix(in srgb,var(--ink) 3%,transparent)}
+.row.sel{background:var(--accent)!important;color:var(--on-accent)}
+.row .k,.row .d{color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.row.sel .k,.row.sel .d{color:inherit;opacity:.85}
+.row .n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fi{width:16px;height:20px}
+@media (max-width:560px){.finder{grid-template-columns:minmax(0,1fr)}.side{display:none}.lh,.row{grid-template-columns:22px minmax(0,1fr) 64px}.lh span:last-child,.row .d{display:none}.win{height:420px}}
+
+.ql{position:absolute;inset:54px 5% 18px 10%;background:var(--ql);border-radius:12px;border:1px solid var(--line);box-shadow:var(--shadow);display:flex;flex-direction:column;overflow:hidden;
+  transform-origin:30% 30%;transition:transform .5s cubic-bezier(.2,1.25,.35,1),opacity .28s ease}
+.ql.closed{opacity:0;transform:scale(.1);transition:transform .32s cubic-bezier(.5,0,.8,.4),opacity .3s ease .02s}
+.qlbar{height:34px;flex:none;display:flex;align-items:center;gap:8px;padding:0 10px;border-bottom:1px solid var(--line);background:var(--win-bar);font-size:12px}
+.qlbar .x{width:12px;height:12px;border-radius:50%;background:var(--line-strong)}
+.qlbar b{flex:1;text-align:center;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qlbar .open{border:1px solid var(--line-strong);border-radius:6px;padding:2px 8px;color:var(--muted);font-size:11px;white-space:nowrap}
+.qlbody{padding:18px 24px;overflow:hidden;flex:1;min-width:0}
+.qlbody>*{opacity:0;transform:translateY(8px);transition:opacity .35s ease,transform .45s cubic-bezier(.2,.9,.3,1);transition-delay:calc(var(--i,0) * 70ms + 180ms)}
+.ql.in .qlbody>*{opacity:1;transform:none}
+
+.keys{display:flex;justify-content:center;align-items:center;gap:14px;margin-top:26px;color:var(--muted);font-size:13px}
+kbd.key{display:inline-flex;align-items:flex-end;justify-content:flex-start;width:170px;height:42px;padding:0 0 7px 12px;border-radius:9px;background:var(--surface);border:1px solid var(--line-strong);box-shadow:0 4px 0 var(--line-strong);font:500 11px/1 -apple-system,var(--f-body);color:var(--muted);transition:transform .08s,box-shadow .08s}
+kbd.key.down{transform:translateY(3px);box-shadow:0 1px 0 var(--line-strong);background:var(--accent-soft);color:var(--accent)}
+.cursor{position:absolute;left:0;top:0;width:18px;height:22px;z-index:5;pointer-events:none;transition:transform .7s cubic-bezier(.5,0,.2,1);filter:drop-shadow(0 1px 1px rgba(0,0,0,.3))}
+
+/* rendered markdown */
+.md{color:var(--ink);font:400 13px/1.55 -apple-system,var(--f-body)}
+.md h1{font:700 22px/1.2 var(--f-display);padding-bottom:6px;border-bottom:1px solid var(--line);margin:0 0 10px}
+.md h2{font:700 15px/1.3 var(--f-display);margin:14px 0 6px}
+.md p{margin:0 0 10px}
+.md pre{background:var(--code-bg);color:var(--code-fg);border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.55;margin:0 0 10px;overflow-x:auto}
+.md :not(pre)>code{background:color-mix(in srgb,var(--ink) 8%,transparent);padding:1px 5px;border-radius:4px;font-size:.9em}
+.md table{border-collapse:collapse;width:100%;margin:0 0 10px;font-size:12px}
+.md th,.md td{border:1px solid var(--line);padding:5px 8px;text-align:left}
+.md th{background:color-mix(in srgb,var(--ink) 5%,transparent)}
+.md ul,.md ol{margin:0 0 10px;padding-left:20px}
+.md li{margin:2px 0}
+.md ul.tasks{list-style:none;padding-left:2px}
+.md .cb{display:inline-block;width:12px;height:12px;border:1.5px solid var(--line-strong);border-radius:3px;vertical-align:-1px;margin-right:7px}
+.md .cb.on{background:var(--accent);border-color:var(--accent);box-shadow:inset 0 0 0 2px var(--ql)}
+.md blockquote{margin:0 0 10px;padding:4px 12px;border-left:3px solid var(--line-strong);color:var(--muted)}
+.md mark{background:var(--mark);color:var(--mark-ink);padding:0 3px;border-radius:2px}
+.md a{color:var(--accent)}
+.pill{display:inline-block;font:600 10.5px/1 var(--f-mono);padding:3px 6px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}
+.k{color:var(--tk-k)}.s{color:var(--tk-s)}.c{color:var(--tk-c)}.f{color:var(--tk-f)}
+
+/* sections */
+section{padding-block:72px}
+.sh{display:grid;gap:14px;max-width:640px;margin-bottom:40px}
+.sh h2{font-size:clamp(1.9rem,3.6vw,2.8rem);line-height:1.05;font-weight:800;letter-spacing:-.035em}
+.sh p{margin:0;color:var(--muted);font-size:1.05rem}
+.rule{border:0;border-top:1px solid var(--line);margin:0}
+
+.feats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--line)}
+.feat{padding:26px 24px 28px 0;border-bottom:1px solid var(--line);display:grid;gap:10px;align-content:start}
+.feat:not(:nth-child(3n+1)){padding-left:24px;border-left:1px solid var(--line)}
+.feat svg{width:28px;height:28px;color:var(--accent)}
+.feat h3{font-size:1.15rem;font-weight:700}
+.feat p{margin:0;color:var(--muted);font-size:.95rem;max-width:38ch}
+.feat code{font-size:.85em;color:var(--ink)}
+@media (max-width:860px){.feats{grid-template-columns:minmax(0,1fr)}.feat,.feat:not(:nth-child(3n+1)){padding:22px 0;border-left:0}}
+
+.install{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px}
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:22px;counter-reset:s}
+.steps li{display:grid;grid-template-columns:40px minmax(0,1fr);gap:14px;counter-increment:s}
+.steps li::before{content:counter(s);width:34px;height:34px;border-radius:50%;border:1.5px solid var(--ink);display:grid;place-items:center;font:700 15px/1 var(--f-display)}
+.steps h3{font-size:1.08rem;font-weight:700;margin-bottom:4px}
+.steps p{margin:0;color:var(--muted);font-size:.95rem}
+.steps .cmd{margin-top:10px;display:inline-flex}
+.path{font:500 12.5px/1.6 var(--f-mono);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:2px 7px;display:inline-block;margin-top:6px}
+.side-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px;display:grid;gap:18px;align-content:start}
+.side-card h3{font-size:1.05rem}
+.term{background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:14px 16px;font:400 13px/1.7 var(--f-mono);overflow-x:auto;margin:0;white-space:pre}
+.tbl{overflow-x:auto}
+.tbl table{border-collapse:collapse;width:100%;font-size:14px}
+.tbl th,.tbl td{text-align:left;padding:8px 10px 8px 0;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl th{font:600 11px/1.4 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.tbl td code{font-size:12.5px}
+@media (max-width:860px){.install{grid-template-columns:minmax(0,1fr)}}
+
+.play{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--surface);box-shadow:var(--shadow)}
+.pane{display:flex;flex-direction:column;min-width:0;min-height:420px}
+.pane+.pane{border-left:1px solid var(--line)}
+.ph{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 16px;border-bottom:1px solid var(--line);font:500 12px/1 var(--f-mono);color:var(--muted);background:var(--win-bar)}
+textarea{flex:1;border:0;resize:none;padding:18px;font:400 13.5px/1.65 var(--f-mono);background:transparent;color:var(--ink);outline:none;min-height:380px}
+.pv{padding:20px 24px;overflow:auto;flex:1;max-height:520px}
+.pv.md{font-size:14px}
+@media (max-width:760px){.play{grid-template-columns:minmax(0,1fr)}.pane+.pane{border-left:0;border-top:1px solid var(--line)}}
+
+/* brand */
+.brandgrid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:20px}
+.hero-logo{position:relative;border-radius:16px;background:var(--ink);color:var(--paper);min-height:340px;display:grid;place-items:center;overflow:hidden}
+.hero-logo .big{width:min(220px,55%);color:var(--paper)}
+.hero-logo .word{position:absolute;left:24px;bottom:20px;font:800 30px/1 var(--f-display);letter-spacing:-.04em}
+.replay{position:absolute;right:16px;top:16px;font:600 12px/1 var(--f-body);background:transparent;color:var(--paper);border:1px solid color-mix(in srgb,var(--paper) 40%,transparent);border-radius:999px;padding:8px 12px;cursor:pointer}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.tile{border-radius:16px;border:1px solid var(--line);display:grid;place-items:center;min-height:160px;position:relative}
+.tile svg{width:76px;height:76px}
+.tile figcaption{position:absolute;left:14px;bottom:10px;font:500 11px/1 var(--f-mono);color:inherit;opacity:.7}
+.t-paper{background:var(--surface);color:var(--ink)}
+.t-accent{background:#2D5BFF;color:#fff;border-color:transparent}
+.t-mark{background:#FFD84D;color:#0F1726;border-color:transparent}
+.t-icon{background:var(--paper)}
+.swatches{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;margin-top:20px}
+.sw{border-radius:14px;border:1px solid var(--line);overflow:hidden;background:var(--surface)}
+.sw i{display:block;height:84px}
+.sw div{padding:12px 14px;display:grid;gap:2px}
+.sw b{font:700 15px/1.2 var(--f-display)}
+.sw span{font:400 12px/1.4 var(--f-mono);color:var(--muted)}
+.type{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin-top:20px}
+.type>div{border-top:1px solid var(--ink);padding-top:14px}
+.type .sp{font-size:44px;line-height:1;margin:10px 0 6px}
+.type small{color:var(--muted);font:400 12px/1.4 var(--f-mono)}
+@media (max-width:860px){.brandgrid,.type{grid-template-columns:minmax(0,1fr)}.swatches{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* logo motion */
+.logo .eye{transform-box:fill-box;transform-origin:center}
+.logo .pupil,.logo .arrow{transform-box:fill-box;transform-origin:center}
+.logo.play .lid{stroke-dasharray:1;animation:draw 1.1s cubic-bezier(.6,0,.2,1) both}
+.logo.play .pupil{animation:pop .7s .8s cubic-bezier(.3,1.7,.5,1) both}
+.logo.play .arrow{animation:drop .7s 1.15s cubic-bezier(.3,1.7,.5,1) both}
+.logo.blink .eye{animation:blink 5.5s 2.6s infinite}
+@keyframes draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+@keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
+@keyframes drop{from{transform:translateY(-60%);opacity:0}to{transform:none;opacity:1}}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.06)}}
+
+/* oss + footer */
+.oss{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:40px;align-items:center;background:var(--accent);color:var(--on-accent);border-radius:20px;padding:44px}
+.oss h2{font-size:clamp(1.8rem,3.4vw,2.6rem);line-height:1.05;font-weight:800;letter-spacing:-.035em}
+.oss p{opacity:.88;margin:12px 0 0;max-width:46ch}
+.oss .term{background:color-mix(in srgb,#000 30%,var(--accent));color:#fff}
+.oss .links2{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.oss .links2 a{border:1px solid color-mix(in srgb,var(--on-accent) 45%,transparent);border-radius:999px;padding:8px 14px;text-decoration:none;font-size:14px;font-weight:500}
+.oss .links2 a:hover{background:color-mix(in srgb,var(--on-accent) 14%,transparent)}
+@media (max-width:860px){.oss{grid-template-columns:minmax(0,1fr);padding:28px 22px}}
+footer{padding-block:36px 48px;color:var(--muted);font-size:13px}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px}
+
+@media (max-width:900px){.hero{grid-template-columns:minmax(0,1fr);gap:40px;padding-block:44px 24px}.lede{max-width:46ch}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+
+<!-- shared logo symbol -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="eye" viewBox="0 0 64 64">
+      <path d="M5 32C17 13 47 13 59 32C47 51 17 51 5 32Z" fill="none" stroke="currentColor" stroke-width="5.2" stroke-linejoin="round"/>
+      <circle cx="32" cy="32" r="11" fill="#2D5BFF"/>
+      <path d="M32 25.5v12M26.8 32.6l5.2 5.2 5.2-5.2" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="appicon" viewBox="0 0 64 64">
+      <rect width="64" height="64" rx="15" fill="#0F1726"/>
+      <path d="M9 32C19.5 16 44.5 16 55 32C44.5 48 19.5 48 9 32Z" fill="none" stroke="#fff" stroke-width="4.6" stroke-linejoin="round"/>
+      <circle cx="32" cy="32" r="9.6" fill="#FFD84D"/>
+      <path d="M32 26.4v10.4M27.6 32.4l4.4 4.4 4.4-4.4" fill="none" stroke="#0F1726" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="mdfile" viewBox="0 0 16 20">
+      <path d="M1 1.5h9.5L15 6v12.5H1z" fill="#fff" stroke="#AEB6C4"/><path d="M10.5 1.5V6H15" fill="none" stroke="#AEB6C4"/>
+      <rect x="3" y="10" width="10" height="5.5" rx="1" fill="#2D5BFF"/><path d="M4.6 14.2v-2.8l1.3 1.4 1.3-1.4v2.8M10.3 11.3v2.8M9.2 13.1l1.1 1.1 1.1-1.1" fill="none" stroke="#fff" stroke-width=".9" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="imgfile" viewBox="0 0 16 20">
+      <path d="M1 1.5h9.5L15 6v12.5H1z" fill="#fff" stroke="#AEB6C4"/><path d="M10.5 1.5V6H15" fill="none" stroke="#AEB6C4"/>
+      <path d="M3 16l3.5-4.5 2.5 3 1.5-2 2.5 3.5z" fill="#28C840"/><circle cx="11" cy="9.5" r="1.3" fill="#FEBC2E"/>
+    </symbol>
+  </defs>
+</svg>
+
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="#top" aria-label="Peekdown home"><svg aria-hidden="true"><use href="#appicon"/></svg>peekdown</a>
+    <nav class="links">
+      <a href="#features">Features</a><a href="#install">Install</a><a href="#playground">Playground</a><a href="#brand">Brand</a>
+      <a class="gh" href="https://github.com/h0ck3ystyx/peekdown"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0a8 8 0 0 0-2.53 15.59c.4.07.55-.17.55-.38v-1.33c-2.23.48-2.7-1.07-2.7-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.06-.49.06-.49.8.06 1.23.83 1.23.83.72 1.22 1.88.87 2.34.66.07-.52.28-.87.5-1.07-1.78-.2-3.65-.89-3.65-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8 8 0 0 0 8 0Z"/></svg>Star on GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <div class="wrap hero">
+    <div>
+      <p class="eyebrow">Quick Look extension for macOS</p>
+      <h1 style="margin-top:16px">Press space.<br>Read <span class="hl">Markdown.</span></h1>
+      <p class="lede">Peekdown renders <code>.md</code> files right inside Finder’s Quick Look. Select a file, tap the space bar, and see headings, tables, code and task lists with clear native formatting. Free and open source.</p>
+      <div class="ctas">
+        <a class="btn" href="https://github.com/h0ck3ystyx/peekdown/releases/download/v1.0.2/Peekdown-1.0.2.pkg">Download installer · v1.0.2</a>
+        <a class="btn" href="https://github.com/h0ck3ystyx/peekdown/releases/download/v1.0.2/Peekdown-1.0.2.zip">Download ZIP</a>
+      </div>
+      <div class="meta"><span><b>macOS 12+</b> Monterey or later</span><span><b>Universal</b> Apple silicon + Intel</span><span><b>MIT</b> licensed</span></div>
+    </div>
+
+    <div class="stage" aria-label="Animated demo: selecting Markdown files in Finder and previewing them with Quick Look">
+      <div class="win" id="win">
+        <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="title">peekdown-demo</span><span class="path">~/Projects</span></div>
+        <div class="finder">
+          <div class="side"><small>Favorites</small><div>Recents</div><div>Applications</div><div class="on">Projects</div><div>Downloads</div><small>Locations</small><div>Macintosh HD</div></div>
+          <div class="list" id="list">
+            <div class="lh"><span></span><span>Name</span><span>Kind</span><span>Modified</span></div>
+            <div class="row"><svg class="fi"><use href="#mdfile"/></svg><span class="n">CHANGELOG.md</span><span class="k">Markdown</span><span class="d">Oct 21</span></div>
+            <div class="row sel" data-f="0"><svg class="fi"><use href="#mdfile"/></svg><span class="n">README.md</span><span class="k">Markdown</span><span class="d">Today</span></div>
+            <div class="row"><svg class="fi"><use href="#imgfile"/></svg><span class="n">hero-shot.heic</span><span class="k">HEIC image</span><span class="d">Oct 19</span></div>
+            <div class="row" data-f="1"><svg class="fi"><use href="#mdfile"/></svg><span class="n">roadmap.md</span><span class="k">Markdown</span><span class="d">Yesterday</span></div>
+            <div class="row" data-f="2"><svg class="fi"><use href="#mdfile"/></svg><span class="n">design-sync.md</span><span class="k">Markdown</span><span class="d">Oct 27</span></div>
+            <div class="row"><svg class="fi"><use href="#mdfile"/></svg><span class="n">CONTRIBUTING.md</span><span class="k">Markdown</span><span class="d">Sep 30</span></div>
+          </div>
+        </div>
+        <div class="ql in" id="ql">
+          <div class="qlbar"><span class="x"></span><b id="qlname">README.md</b><span class="open">Open with Xcode</span></div>
+          <div class="qlbody md" id="qlbody"></div>
+        </div>
+        <svg class="cursor" id="cursor" viewBox="0 0 18 22" aria-hidden="true"><path d="M2 1.5v16.2l4.2-4 2.8 6.4 2.6-1.1-2.8-6.3h5.9z" fill="#111" stroke="#fff" stroke-width="1.3" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="keys"><kbd class="key" id="key">space</kbd><span>to preview</span></div>
+    </div>
+  </div>
+
+  <hr class="rule wrap" style="padding:0">
+
+  <section id="features">
+    <div class="wrap">
+      <div class="sh"><p class="eyebrow">What renders</p><h2>Readable Markdown, one keystroke away.</h2><p>Peekdown renders common Markdown and selected GitHub-style features with a dependency-free Swift renderer and native AppKit text.</p></div>
+      <div class="feats">
+        <div class="feat"><svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="5" width="22" height="18" rx="2"/><path d="M3 11h22M11 11v12M3 17h22"/></svg><h3>Markdown essentials</h3><p>Headings, tables, task lists, strikethrough, links and blockquotes. Read your README without opening an editor.</p></div>
+        <div class="feat"><svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 8 4 14l6 6M18 8l6 6-6 6M15.5 6l-3 16"/></svg><h3>Readable code blocks</h3><p>Fenced and indented code blocks use monospaced text. Inline code stands out within paragraphs, without a browser or JavaScript.</p></div>
+        <div class="feat"><svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="8" height="6" rx="1.5"/><rect x="17" y="18" width="8" height="6" rx="1.5"/><rect x="17" y="4" width="8" height="6" rx="1.5"/><path d="M11 7h6M21 10v8"/></svg><h3>Finder thumbnails</h3><p>See a document’s first heading and a short text snippet in a styled Markdown thumbnail, alongside the full Quick Look preview.</p></div>
+        <div class="feat"><svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="14" cy="14" r="10"/><path d="M14 4a10 10 0 0 0 0 20z" fill="currentColor"/></svg><h3>Matches your Mac</h3><p>Follows Light and Dark appearance using native system text colors, with system fonts for prose and monospaced fonts for code.</p></div>
+        <div class="feat"><svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M14 3 5 6.5v6.8c0 5.4 3.8 9.6 9 11.7 5.2-2.1 9-6.3 9-11.7V6.5z"/><path d="m10 14 3 3 5-6" stroke-linecap="round"/></svg><h3>Private by design</h3><p>The native app runs in Apple’s App Sandbox without network access. Images appear as alt text; remote images are not downloaded.</p></div>
+        <div class="feat"><svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 5h18M5 23h18"/><path d="M8 10h5M8 14h9M8 18h7"/></svg><h3>Front matter aware</h3><p>YAML front matter at the start of a document is hidden so the preview begins with your Markdown content.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="install" style="padding-top:24px">
+    <div class="wrap install">
+      <div>
+        <div class="sh" style="margin-bottom:28px"><p class="eyebrow">Install</p><h2>Choose how to install.</h2></div>
+        <ol class="steps">
+          <li><div><h3>Install the app</h3><p>Download the signed, notarized <a href="https://github.com/h0ck3ystyx/peekdown/releases/download/v1.0.2/Peekdown-1.0.2.pkg">installer</a>. Choose <b>Install for me only</b> for <code>~/Applications</code> without admin access, or <b>Install for all users</b> for <code>/Applications</code> with admin authorization. If needed, click <b>Change Install Location…</b>. Prefer a manual install? Extract the <a href="https://github.com/h0ck3ystyx/peekdown/releases/download/v1.0.2/Peekdown-1.0.2.zip">ZIP</a> and move the app to <code>~/Applications</code>. Create that folder if needed.</p></div></li>
+          <li><div><h3>Open it once</h3><p>Open Peekdown from the Applications folder you selected so macOS can discover its extensions. You can quit it afterward.</p></div></li>
+          <li><div><h3>Turn on the extension</h3><p>If previews do not appear, look for Quick Look in System Settings. On recent macOS versions, go to</p><span class="path">General › Login Items &amp; Extensions › Quick Look</span><p style="margin-top:6px">and switch on Peekdown.</p></div></li>
+          <li><div><h3>Press space on any .md file</h3><p>Select a Markdown file in Finder and tap the space bar. </p></div></li>
+        </ol>
+      </div>
+      <div class="side-card">
+        <h3>Supported files</h3>
+        <div class="tbl"><table>
+          <thead><tr><th>Extension</th><th>Type identifier</th></tr></thead>
+          <tbody>
+            <tr><td><code>.md .markdown</code></td><td><code>net.daringfireball.markdown</code></td></tr>
+            <tr><td><code>.mdown .mkd .mkdn</code></td><td><code>net.daringfireball.markdown</code></td></tr>
+          </tbody>
+        </table></div>
+        <h3>Preview not showing?</h3>
+        <p style="margin:-8px 0 0;color:var(--muted);font-size:.95rem">Reset the Quick Look cache, then select a Markdown file in Finder and press Space. Avoid keeping both Peekdown and the old MarkdownPreview app installed.</p>
+<pre class="term"><span class="c"># clear cached generators and thumbnails</span>
+qlmanage -r &amp;&amp; qlmanage -r cache</pre>
+      </div>
+    </div>
+  </section>
+
+  <section id="playground" style="padding-top:24px">
+    <div class="wrap">
+      <div class="sh"><p class="eyebrow">Playground</p><h2>Try a Markdown demo.</h2><p>Edit the Markdown on the left for an interactive browser demo. This demo uses a web renderer; Peekdown itself uses native AppKit text, so formatting and supported features differ.</p></div>
+      <div class="play">
+        <div class="pane"><div class="ph"><span>notes.md</span><span>raw</span></div><textarea id="src" spellcheck="false" aria-label="Markdown source"></textarea></div>
+        <div class="pane"><div class="ph"><span>Quick Look</span><span class="pill">rendered</span></div><div class="pv md" id="out"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="brand" style="padding-top:24px">
+    <div class="wrap">
+      <div class="sh"><p class="eyebrow">Brand kit</p><h2>An eye for Markdown.</h2><p>The mark joins the Quick Look eye with Markdown’s down arrow. It draws on, settles, and blinks now and then. This landing-page artwork illustrates the Peekdown identity; the current app uses a system document symbol.</p></div>
+      <div class="brandgrid">
+        <div class="hero-logo">
+          <svg class="big logo play blink" id="biglogo" viewBox="0 0 64 64" role="img" aria-label="Peekdown logo">
+            <g class="eye">
+              <path class="lid" pathLength="1" d="M5 32C17 13 47 13 59 32C47 51 17 51 5 32Z" fill="none" stroke="currentColor" stroke-width="4.6" stroke-linejoin="round"/>
+              <circle class="pupil" cx="32" cy="32" r="11" fill="#FFD84D"/>
+              <path class="arrow" d="M32 25.5v12M26.8 32.6l5.2 5.2 5.2-5.2" fill="none" stroke="#0F1726" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </g>
+          </svg>
+          <span class="word">peekdown</span>
+          <button class="replay" id="replay" type="button">Replay motion</button>
+        </div>
+        <div class="tiles">
+          <figure class="tile t-icon" style="margin:0"><svg aria-hidden="true"><use href="#appicon"/></svg><figcaption>Icon concept</figcaption></figure>
+          <figure class="tile t-paper" style="margin:0"><svg aria-hidden="true"><use href="#eye"/></svg><figcaption>Mark · light</figcaption></figure>
+          <figure class="tile t-accent" style="margin:0"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M5 32C17 13 47 13 59 32C47 51 17 51 5 32Z" fill="none" stroke="#fff" stroke-width="5.2" stroke-linejoin="round"/><circle cx="32" cy="32" r="11" fill="#fff"/><path d="M32 25.5v12M26.8 32.6l5.2 5.2 5.2-5.2" fill="none" stroke="#2D5BFF" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg><figcaption>Mark · cobalt</figcaption></figure>
+          <figure class="tile t-mark" style="margin:0"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M5 32C17 13 47 13 59 32C47 51 17 51 5 32Z" fill="none" stroke="#0F1726" stroke-width="5.2" stroke-linejoin="round"/><circle cx="32" cy="32" r="11" fill="#0F1726"/><path d="M32 25.5v12M26.8 32.6l5.2 5.2 5.2-5.2" fill="none" stroke="#FFD84D" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg><figcaption>Mark · highlighter</figcaption></figure>
+        </div>
+      </div>
+      <div class="swatches">
+        <div class="sw"><i style="background:#2D5BFF"></i><div><b>Cobalt</b><span>#2D5BFF · links, actions</span></div></div>
+        <div class="sw"><i style="background:#0F1726"></i><div><b>Ink</b><span>#0F1726 · text, icon ground</span></div></div>
+        <div class="sw"><i style="background:#FFD84D"></i><div><b>Highlighter</b><span>#FFD84D · page accents</span></div></div>
+        <div class="sw"><i style="background:#F2F4F8"></i><div><b>Paper</b><span>#F2F4F8 · backgrounds</span></div></div>
+      </div>
+      <div class="type">
+        <div><small>Display</small><div class="sp" style="font-family:var(--f-display);font-weight:800;letter-spacing:-.04em">Aa ##</div><small>Bricolage Grotesque 800</small></div>
+        <div><small>Body</small><div class="sp" style="font-family:var(--f-body)">Aa ¶</div><small>IBM Plex Sans 400 / 600</small></div>
+        <div><small>Code</small><div class="sp" style="font-family:var(--f-mono)">`a`</div><small>JetBrains Mono 400</small></div>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding-top:24px">
+    <div class="wrap">
+      <div class="oss">
+        <div>
+          <p class="eyebrow" style="color:inherit;opacity:.8">Open source · MIT</p>
+          <h2 style="margin-top:12px">Built in the open, in Swift.</h2>
+          <p>Peekdown is a small Swift app with a <code>QLPreviewingController</code> extension and a bundled renderer. Bug reports, feature suggestions and parser fixes are all welcome.</p>
+          <div class="links2"><a href="https://github.com/h0ck3ystyx/peekdown">Read the source</a><a href="https://github.com/h0ck3ystyx/peekdown/issues">Report an issue</a><a href="https://github.com/h0ck3ystyx/peekdown#build--install">Build instructions</a></div>
+        </div>
+<pre class="term">git clone https://github.com/h0ck3ystyx/peekdown
+cd peekdown
+./scripts/test.sh
+./build.sh
+<span style="opacity:.6"># Ad-hoc local build. See README
+# for development signing.</span></pre>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer><div class="wrap"><span>Peekdown · MIT License</span><span>Not affiliated with Apple. macOS and Quick Look are trademarks of Apple Inc.</span></div></footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.4.17/purify.min.js"></script>
+<script>
+(() => {
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  /* ---------- Quick Look demo content ---------- */
+  const files = [
+    {name:'README.md', html:`
+<h1>Peekdown</h1>
+<p>Quick Look for <mark>Markdown</mark> on macOS. Select a file, press <code>space</code>.</p>
+<h2>Install</h2>
+<p>Choose the installer or ZIP from the GitHub release.</p>
+<ul class="tasks"><li><span class="cb on"></span>Tables and task lists</li><li><span class="cb on"></span>Light and Dark appearance</li><li><span class="cb"></span>Custom themes</li></ul>`},
+    {name:'roadmap.md', html:`
+<h1>Project checklist</h1>
+<table><thead><tr><th>Feature</th><th>Status</th></tr></thead><tbody>
+<tr><td>Native previews</td><td><span class="pill">shipped</span></td></tr>
+<tr><td>Markdown tables</td><td><span class="pill">shipped</span></td></tr>
+<tr><td>User-only installer</td><td>shipped</td></tr>
+<tr><td>Thumbnail extension</td><td>shipped</td></tr></tbody></table>
+<pre>let preview = MarkdownRenderer
+    .attributedString(from: text)</pre>`},
+    {name:'design-sync.md', html:`
+<h1>Design sync · Oct 27</h1>
+<blockquote>Example notes for the next team meeting.</blockquote>
+<h2>Decisions</h2>
+<ol><li>Keep the eye mark, drop the gradient</li><li>Highlighter yellow for the landing page only</li><li>Code blocks follow the system appearance</li></ol>
+<p>Owner: <a>@maya</a> · due <code>2026-11-04</code></p>`}
+  ];
+
+  const ql = document.getElementById('ql'), body = document.getElementById('qlbody'), qlname = document.getElementById('qlname');
+  const win = document.getElementById('win'), key = document.getElementById('key'), cursor = document.getElementById('cursor');
+  const rows = [...document.querySelectorAll('.row[data-f]')];
+
+  function fill(i){
+    qlname.textContent = files[i].name;
+    body.innerHTML = files[i].html.trim();
+    [...body.children].forEach((el, n) => el.style.setProperty('--i', n));
+  }
+  function moveCursorTo(row){
+    const w = win.getBoundingClientRect(), r = row.querySelector('.n').getBoundingClientRect();
+    cursor.style.transform = `translate(${r.left - w.left + Math.min(60, r.width*.6)}px, ${r.top - w.top + 4}px)`;
+  }
+  function originFrom(row){
+    const q = ql.getBoundingClientRect(), r = row.getBoundingClientRect();
+    ql.style.transformOrigin = `${Math.max(0, r.left - q.left + 60)}px ${r.top - q.top + r.height/2}px`;
+  }
+
+  fill(0);
+  if (reduce) { cursor.style.display = 'none'; }
+  else {
+    moveCursorTo(rows[0]);
+    let idx = 0;
+    (async function loop(){
+      await sleep(2600);
+      while (true) {
+        if (document.hidden) { await sleep(800); continue; }
+        // close current preview (space again)
+        key.classList.add('down'); await sleep(140); key.classList.remove('down');
+        originFrom(rows[idx]); ql.classList.remove('in'); ql.classList.add('closed');
+        await sleep(450);
+        // pick next file
+        idx = (idx + 1) % files.length;
+        moveCursorTo(rows[idx]); await sleep(750);
+        document.querySelectorAll('.row.sel').forEach(r => r.classList.remove('sel'));
+        rows[idx].classList.add('sel'); await sleep(420);
+        // press space, open
+        fill(idx); originFrom(rows[idx]);
+        key.classList.add('down'); await sleep(150); key.classList.remove('down');
+        ql.classList.remove('closed');
+        requestAnimationFrame(() => ql.classList.add('in'));
+        await sleep(3400);
+      }
+    })();
+    addEventListener('resize', () => moveCursorTo(document.querySelector('.row.sel') || rows[0]));
+  }
+
+  /* ---------- copy buttons ---------- */
+  document.querySelectorAll('[data-copy]').forEach(b => b.addEventListener('click', () => {
+    const el = document.getElementById(b.dataset.copy), txt = el.textContent;
+    const done = () => { b.textContent = 'Copied'; setTimeout(() => b.textContent = 'Copy', 1600); };
+    const fallback = () => { const s = getSelection(), r = document.createRange(); r.selectNodeContents(el); s.removeAllRanges(); s.addRange(r); b.textContent = 'Press ⌘C'; setTimeout(() => b.textContent = 'Copy', 2200); };
+    try { navigator.clipboard.writeText(txt).then(done, fallback); } catch(e) { fallback(); }
+  }));
+
+  /* ---------- playground ---------- */
+  const src = document.getElementById('src'), out = document.getElementById('out');
+  src.value = `# Trip notes
+
+Peekdown renders **bold**, _italic_, ~~strike~~ and \`inline code\`.
+
+## Packing list
+- [x] Charger
+- [x] Passport
+- [ ] Rain jacket
+
+| Day | City   | Train |
+|-----|--------|-------|
+| Fri | Lisbon | 09:12 |
+| Sat | Porto  | 14:40 |
+
+\`\`\`swift
+let preview = QLPreviewPanel.shared()
+preview?.makeKeyAndOrderFront(nil)
+\`\`\`
+
+> Tip: select a Markdown file in Finder and press Space.`;
+  const esc = s => s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  function render(){
+    if (window.marked && window.DOMPurify) {
+      let html = marked.parse(src.value, {gfm:true, breaks:false});
+      html = html.replace(/<li><input checked="" disabled="" type="checkbox">/g,'<li class="t"><span class="cb on"></span>')
+                 .replace(/<li><input disabled="" type="checkbox">/g,'<li class="t"><span class="cb"></span>');
+      out.innerHTML = DOMPurify.sanitize(html);
+      out.querySelectorAll('ul').forEach(u => { if (u.querySelector(':scope > li.t')) u.classList.add('tasks'); });
+    } else out.innerHTML = '<pre>' + esc(src.value) + '</pre>';
+  }
+  src.addEventListener('input', render); render();
+
+  /* ---------- logo replay ---------- */
+  const logo = document.getElementById('biglogo');
+  document.getElementById('replay').addEventListener('click', () => {
+    logo.classList.remove('play'); void logo.getBoundingClientRect(); logo.classList.add('play');
+  });
+})();
+</script>
+
+</body></html>

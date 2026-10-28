@@ -1,5 +1,7 @@
 # Peekdown
 
+[Website & demo](https://h0ck3ystyx.github.io/peekdown/) · [Download the latest release](https://github.com/h0ck3ystyx/peekdown/releases/latest)
+
 A native macOS Quick Look extension that renders Markdown (`.md`, `.markdown`, `.mdown`, `.mkd`, `.mkdn`) as formatted documents when you press **Space** in Finder — headings, lists, tables, code, and more — plus a styled thumbnail for the Finder preview pane.
 
 Markdown is parsed to an `NSAttributedString` in Swift and drawn with AppKit. No WebKit, no JavaScript, no HTML importer — so it works inside the Quick Look sandbox.
