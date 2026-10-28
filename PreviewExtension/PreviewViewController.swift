@@ -39,6 +39,25 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
                             userInfo: [NSLocalizedDescriptionKey: "Unsupported file type"]))
             return
         }
+        
+        // Check file size before reading
+        guard let fileSize = (try? FileManager.default.attributesOfItem(atPath: url.path))?[.size] as? Int,
+              fileSize <= RenderingConstants.maxFileSize else {
+            let fallback = """
+                File Too Large
+                
+                This Markdown file exceeds the \(RenderingConstants.maxFileSize / 1024 / 1024) MB preview limit.
+                Please open it in a text editor.
+                """
+            let attrs: [NSAttributedString.Key: Any] = [
+                .font: NSFont.systemFont(ofSize: 14),
+                .foregroundColor: NSColor.secondaryLabelColor
+            ]
+            textView.textStorage?.setAttributedString(NSAttributedString(string: fallback, attributes: attrs))
+            handler(nil)
+            return
+        }
+        
         let raw: String
         if let s = try? String(contentsOf: url, encoding: .utf8) {
             raw = s
