@@ -261,6 +261,9 @@ footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px}
       <h1 style="margin-top:16px">Press space.<br>Read <span class="hl">Markdown.</span></h1>
       <p class="lede">Peekdown renders <code>.md</code> files right inside Finder’s Quick Look. Select a file, tap the space bar, and see headings, tables, code and task lists with clear native formatting. Free and open source.</p>
       <div class="ctas">
+        <div class="cmd" style="max-width:420px"><span id="brew-cmd">brew install --cask h0ck3ystyx/tap/peekdown</span><button class="copy" data-copy="brew-cmd" type="button">Copy</button></div>
+      </div>
+      <div class="ctas" style="margin-top:12px">
         <a class="btn" href="https://github.com/h0ck3ystyx/peekdown/releases/download/v1.0.2/Peekdown-1.0.2.pkg">Download installer · v1.0.2</a>
         <a class="btn" href="https://github.com/h0ck3ystyx/peekdown/releases/download/v1.0.2/Peekdown-1.0.2.zip">Download ZIP</a>
       </div>
@@ -313,14 +316,21 @@ footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px}
       <div>
         <div class="sh" style="margin-bottom:28px"><p class="eyebrow">Install</p><h2>Choose how to install.</h2></div>
         <ol class="steps">
-          <li><div><h3>Install the app</h3><p>Download the signed, notarized <a href="https://github.com/h0ck3ystyx/peekdown/releases/download/v1.0.2/Peekdown-1.0.2.pkg">installer</a>. Choose <b>Install for me only</b> for <code>~/Applications</code> without admin access, or <b>Install for all users</b> for <code>/Applications</code> with admin authorization. If needed, click <b>Change Install Location…</b>. Prefer a manual install? Extract the <a href="https://github.com/h0ck3ystyx/peekdown/releases/download/v1.0.2/Peekdown-1.0.2.zip">ZIP</a> and move the app to <code>~/Applications</code>. Create that folder if needed.</p></div></li>
-          <li><div><h3>Open it once</h3><p>Open Peekdown from the Applications folder you selected so macOS can discover its extensions. You can quit it afterward.</p></div></li>
+          <li><div><h3>Install the app</h3><p><b>Homebrew (recommended):</b> Run this command. The Quick Look extensions register automatically on install.</p><div class="cmd" style="margin-top:10px"><span id="brew-install">brew install --cask h0ck3ystyx/tap/peekdown</span><button class="copy" data-copy="brew-install" type="button">Copy</button></div><p style="margin-top:14px"><b>Manual install:</b> Download the signed, notarized <a href="https://github.com/h0ck3ystyx/peekdown/releases/download/v1.0.2/Peekdown-1.0.2.pkg">installer</a>. Choose <b>Install for me only</b> for <code>~/Applications</code> without admin access, or <b>Install for all users</b> for <code>/Applications</code> with admin authorization. If needed, click <b>Change Install Location…</b>. Prefer a ZIP? Extract the <a href="https://github.com/h0ck3ystyx/peekdown/releases/download/v1.0.2/Peekdown-1.0.2.zip">ZIP</a> and move the app to <code>~/Applications</code>. Create that folder if needed.</p></div></li>
+          <li><div><h3>Open it once</h3><p>If you used the installer or ZIP, open Peekdown from the Applications folder so macOS can discover its extensions. You can quit it afterward. Homebrew installs handle this automatically.</p></div></li>
           <li><div><h3>Turn on the extension</h3><p>If previews do not appear, look for Quick Look in System Settings. On recent macOS versions, go to</p><span class="path">General › Login Items &amp; Extensions › Quick Look</span><p style="margin-top:6px">and switch on Peekdown.</p></div></li>
           <li><div><h3>Press space on any .md file</h3><p>Select a Markdown file in Finder and tap the space bar. </p></div></li>
         </ol>
       </div>
       <div class="side-card">
-        <h3>Supported files</h3>
+        <h3>Homebrew commands</h3>
+        <p style="margin:-8px 0 12px;color:var(--muted);font-size:.95rem">Update to the latest release or remove Peekdown.</p>
+<pre class="term"><span class="c"># upgrade to the latest version</span>
+brew upgrade --cask peekdown
+
+<span class="c"># uninstall</span>
+brew uninstall --cask peekdown</pre>
+        <h3 style="margin-top:18px">Supported files</h3>
         <div class="tbl"><table>
           <thead><tr><th>Extension</th><th>Type identifier</th></tr></thead>
           <tbody>
