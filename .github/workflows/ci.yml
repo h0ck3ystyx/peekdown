@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run tests
+        run: ./scripts/test.sh
+
+      - name: Build with ad-hoc signing
+        run: ./build.sh
+
+      - name: Verify build outputs
+        run: |
+          # Check that the app was built
+          if [ ! -d "build/local/Peekdown.app" ]; then
+            echo "Error: Peekdown.app not found"
+            exit 1
+          fi
+          
+          # Verify basic code signatures (ad-hoc)
+          codesign --verify --strict build/local/Peekdown.app/Contents/PlugIns/PreviewExtension.appex
+          codesign --verify --strict build/local/Peekdown.app/Contents/PlugIns/ThumbnailExtension.appex
+          codesign --verify --strict build/local/Peekdown.app
+          
+          echo "Build verification passed"
