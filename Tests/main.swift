@@ -82,3 +82,135 @@ print("✅ Passed 8 link scheme validation tests")
 print("✅ Passed table separator ReDoS protection test (completed in \(String(format: "%.3f", tablePerfTime))s)")
 print("✅ Validated file size limit constant")
 print("All tests passed!")
+
+
+// Inspect the attributed output rather than only its plain text: links, superscript
+// references, emphasis, and dynamic callout colors are the behavior under test.
+func render(_ source: String) -> NSAttributedString {
+    MarkdownRenderer.attributedString(from: source)
+}
+func links(_ text: NSAttributedString) -> [(String, String)] {
+    var result: [(String, String)] = []
+    text.enumerateAttribute(.link, in: NSRange(location: 0, length: text.length)) { value, range, _ in
+        if let value = value { result.append(((text.string as NSString).substring(with: range), String(describing: value))) }
+    }
+    return result
+}
+func attribute(_ key: NSAttributedString.Key, at needle: String, in text: NSAttributedString) -> Any? {
+    let range = (text.string as NSString).range(of: needle)
+    precondition(range.location != NSNotFound, "Missing rendered text: \(needle)")
+    return text.attribute(key, at: range.location, effectiveRange: nil)
+}
+let fixture = try String(contentsOfFile: "Tests/Fixtures/issue-1.md", encoding: .utf8)
+let rich = render(fixture)
+let destinations = links(rich).map { $0.1 }
+for expected in ["https://github.com/h0ck3ystyx/peekdown", "https://example.org/a_b", "http://www.example.org", "mailto:reader@example.org", "https://example.org/note", "https://example.org/table", "https://example.org/note-body"] {
+    precondition(destinations.contains(expected), "Missing destination: \(expected)")
+}
+for excluded in ["https://example.org/fenced", "https://example.org/indented", "https://example.org/code", "https://example.org/escaped"] {
+    precondition(!destinations.contains(excluded), "Literal code/escape unexpectedly linked: \(excluded)")
+}
+precondition(rich.string.contains("early reference[1]") && rich.string.contains("formatted reference[2]"))
+precondition(rich.string.contains("repeated reference[1]") && rich.string.contains("undefined one[^missing]"))
+precondition(rich.string.contains("1. This is the first numbered note.") && rich.string.contains("2. This is the second numbered note"))
+precondition(rich.string.contains("3. A note referenced in a table."))
+precondition(!rich.string.contains("This note should not appear"))
+precondition(attribute(.superscript, at: "[1]", in: rich) as? Int == 1)
+precondition(attribute(.superscript, at: "[^missing]", in: rich) == nil)
+precondition(rich.string.contains("[^fenced]: Not a definition") && rich.string.contains("[^indented]: Also not a definition"))
+precondition(rich.string.contains("Escaped: [^first], <https://example.org/escaped>, and *literal*."))
+let bold = attribute(.font, at: "formatted reference", in: rich) as! NSFont
+precondition(bold.fontDescriptor.symbolicTraits.contains(.bold))
+for appearanceName in [NSAppearance.Name.aqua, .darkAqua] {
+    NSAppearance(named: appearanceName)!.performAsCurrentDrawingAppearance {
+        let sample = render(fixture)
+        for label in ["ⓘ Note", "✓ Tip", "◆ Important", "⚠ Warning", "⛔ Caution"] {
+            let color = attribute(.foregroundColor, at: label, in: sample) as! NSColor
+            precondition(color.usingColorSpace(.deviceRGB) != nil)
+            precondition(attribute(.backgroundColor, at: label, in: sample) != nil)
+        }
+        precondition(sample.string.contains("[!UNKNOWN]"))
+        precondition(attribute(.backgroundColor, at: "[!UNKNOWN]", in: sample) == nil)
+    }
+}
+let punctuation = links(render("(https://example.org/a_(b)). www.example.org/path! <https://example.org/a_(b)>"))
+precondition(punctuation.map { $0.1 } == ["https://example.org/a_(b)", "http://www.example.org/path", "https://example.org/a_(b)"])
+let explicit = links(render("[https://label.example/a_b](https://destination.example/a_(b))"))
+precondition(explicit.count == 1 && explicit[0].0 == "https://label.example/a_b" && explicit[0].1 == "https://destination.example/a_(b)")
+precondition(links(render("`https://example.org` ``https://example.org ` [^x]``\n\n[^x]: hidden")).isEmpty)
+precondition(!render("`[^x]`\n\n[^x]: hidden").string.contains("Footnotes"))
+let forward = render("[^b] [^a] [^b]\n\n[^a]: Alpha\n[^b]: Beta\n[^b]: Duplicate")
+precondition(forward.string.hasPrefix("[1] [2] [1]") && !forward.string.contains("Duplicate"))
+precondition(!render("[^a]").string.contains("Footnotes"), "Footnotes leaked across documents")
+let cyclic = render("[^a]\n\n[^a]: Self[^a] and other[^b]\n[^b]: Back[^a]")
+precondition(cyclic.string.components(separatedBy: "Self").count == 2 && cyclic.string.components(separatedBy: "Back").count == 2)
+let malformed = ["[^", "[^]: empty", "[^a]:", "<http://>", "<bad@example>", "[broken](", "[!NOTE]", ">[!UNKNOWN]\n> text", "\\", String(repeating: ">", count: 100) + " text"]
+for input in malformed { _ = render(input) }
+// Surplus table cells used to exceed column widths. Exercise links and references
+// through wrapping, including emoji whose UTF-16 ranges differ from character counts.
+let table = render("| Header |\n| --- |\n| 😀 https://example.org/longlonglonglonglonglonglonglonglonglonglonglonglonglonglonglong | extra |")
+precondition(links(table).map { $0.1 }.joined().contains("https://example.org/long"))
+let large = String(repeating: "A paragraph with https://example.org and a note[^large].\n\n", count: 1500) + "[^large]: One definition."
+let largeResult = render(large)
+precondition(links(largeResult).count == 1500)
+precondition(largeResult.string.components(separatedBy: "One definition.").count == 2)
+_ = render(String(repeating: "[", count: 20_000))
+let underscoreLabel = links(render("[https://example.org/snake_case_value](https://destination.example/)"))
+precondition(underscoreLabel.count == 1 && underscoreLabel[0].0 == "https://example.org/snake_case_value")
+precondition(render("snake_case_value and **bold** plus _italic_").string == "snake_case_value and bold plus italic\n")
+precondition(render("x[^a]\n\n[^a]: Start\n  \n    continuation").string.contains("1. Start\ncontinuation\n"))
+
+let malformedLarge = String(repeating: "_x", count: 10_000) + "@invalid"
+precondition(links(render(malformedLarge)).isEmpty)
+_ = render(String(repeating: "word ` unmatched ", count: 1000))
+let styledEmails = render("**reader@example.org** and _other@example.org_")
+precondition(links(styledEmails).map { $0.1 } == ["mailto:reader@example.org", "mailto:other@example.org"])
+precondition(!styledEmails.string.contains("*") && !styledEmails.string.contains("_"))
+let listCode = render("- ```\n  [^inside]: Literal code\n  ```\n\nOutside[^inside].")
+precondition(listCode.string.contains("Outside[^inside]") && !listCode.string.contains("Footnotes"))
+
+let afterList = render("- One item\n> [!NOTE]\n> Separate callout.")
+precondition(afterList.string.contains("ⓘ Note") && afterList.string.contains("Separate callout."))
+print("Passed autolink, footnote, alert, appearance, malformed-input, and large-document regressions")
+
+// Exercise click dispatch independently of LaunchServices and the user's apps.
+var openedLinks: [URL] = []
+let clickHandler = PreviewLinkHandler { openedLinks.append($0) }
+for link: Any in ["https://example.org/docs", URL(string: "http://example.org")!, "mailto:reader@example.org", NSURL(string: "https://example.org/bridged")!] {
+    precondition(clickHandler.handle(link))
+}
+precondition(openedLinks.map { $0.absoluteString } == [
+    "https://example.org/docs", "http://example.org", "mailto:reader@example.org", "https://example.org/bridged"
+])
+for link: Any in ["file:///tmp/example.md", "javascript:alert(1)", "custom-scheme:test", "relative/path", "https://", "mailto:", 42] {
+    precondition(clickHandler.handle(link))
+}
+precondition(openedLinks.count == 4, "Unsupported links must not be dispatched")
+controller.loadView()
+let previewScrollView = (controller.view as! NSStackView).arrangedSubviews.first as! NSScrollView
+let previewTextView = previewScrollView.documentView as! NSTextView
+precondition(previewTextView.delegate === controller, "Link clicks must reach the preview controller")
+print("Passed preview link routing and delegate-wiring checks")
+
+let openingURL = URL(string: "https://example.org")!
+for hostSuccess in [true, false] {
+    for workspaceSuccess in [true, false] {
+        var fallbackCount = 0
+        var failureCount = 0
+        let opener = PreviewURLOpener(
+            requestOpen: { url, completion in precondition(url == openingURL); completion(hostSuccess) },
+            fallbackOpen: { url, completion in precondition(url == openingURL); fallbackCount += 1; completion(workspaceSuccess) },
+            onFailure: { failureCount += 1 }
+        )
+        opener.open(openingURL)
+        precondition(fallbackCount == (hostSuccess ? 0 : 1))
+        precondition(failureCount == (!hostSuccess && !workspaceSuccess ? 1 : 0))
+    }
+}
+print("Passed host-refusal and workspace fallback checks")
+
+for blocked in [javascriptTest, absolutePathTest, relativePathTest, tildePathTest, protocolRelativeTest, malformedHttpsTest] {
+    precondition(links(blocked).isEmpty, "Blocked schemes and local paths must not acquire link attributes")
+}
+precondition(links(httpTest).first?.1 == "http://example.com")
+precondition(links(httpsTest).first?.1 == "https://example.com")
