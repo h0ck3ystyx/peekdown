@@ -20,34 +20,8 @@ jobs:
       
       - name: Validate version consistency
         run: |
-          set -e
-          
-          VERSION=$(cat VERSION | tr -d '[:space:]')
-          echo "VERSION file: $VERSION"
-          
-          # Check project.yml
-          MARKETING_VERSION=$(grep 'MARKETING_VERSION:' project.yml | sed 's/.*MARKETING_VERSION: "\(.*\)"/\1/')
-          echo "project.yml MARKETING_VERSION: $MARKETING_VERSION"
-          
-          if [ "$VERSION" != "$MARKETING_VERSION" ]; then
-            echo "❌ Error: VERSION file ($VERSION) doesn't match project.yml MARKETING_VERSION ($MARKETING_VERSION)"
-            echo "Run: ./scripts/sync-version.sh"
-            exit 1
-          fi
-          
-          # Check Packaging plist files
-          for plist in Packaging/App-Info.plist Packaging/PreviewExt-Info.plist Packaging/ThumbExt-Info.plist; do
-            PLIST_VERSION=$(grep -A1 'CFBundleShortVersionString' "$plist" | tail -1 | sed 's/.*<string>\(.*\)<\/string>/\1/' | tr -d '[:space:]')
-            echo "$plist: $PLIST_VERSION"
-            
-            if [ "$VERSION" != "$PLIST_VERSION" ]; then
-              echo "❌ Error: VERSION file ($VERSION) doesn't match $plist ($PLIST_VERSION)"
-              echo "Run: ./scripts/sync-version.sh"
-              exit 1
-            fi
-          done
-          
-          echo "✓ All version strings are consistent with VERSION file"
+          ./scripts/sync-version.sh --check
+          python3 Tests/test_versions.py
 
   test:
     name: Build and Test
@@ -66,7 +40,6 @@ jobs:
         run: ./build.sh
         env:
           APPLICATION_IDENTITY: "-"
-          BUILD_NUMBER: "${{ github.run_number }}"
       
       - name: Run tests
         run: |
@@ -88,7 +61,7 @@ jobs:
       
       - name: Verify built version
         run: |
-          VERSION=$(cat VERSION | tr -d '[:space:]')
+          source scripts/version.sh
           BUILT_VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' build/local/Peekdown.app/Contents/Info.plist)
           
           echo "Expected version: $VERSION"
@@ -99,7 +72,10 @@ jobs:
             exit 1
           fi
           
-          echo "✓ Build successful with correct version"
+          for bundle in build/local/Peekdown.app build/local/Peekdown.app/Contents/PlugIns/*.appex; do
+            test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$bundle/Contents/Info.plist")" = "$VERSION"
+            test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$bundle/Contents/Info.plist")" = "$BUILD_NUMBER"
+          done
 
   security-scan:
     name: Security Scan

@@ -2,50 +2,26 @@
 
 ## Version management
 
-The app version is maintained in a single `VERSION` file at the repository root.
-All build scripts, plists, and project files derive their version from this source.
+`VERSION` contains the marketing version and `BUILD_NUMBER` contains the positive
+integer build number. Local, XcodeGen, CI, and release builds use these same values.
+The copies in `project.yml` and `Packaging/*.plist` are generated settings; CI checks
+both numbers for drift. Syncing requires Python 3 from the Xcode developer tools.
 
-### Bumping the version
+Before a release:
 
-To bump the version for a new release:
+1. Update `VERSION` (for example, `1.0.3`) and increment `BUILD_NUMBER` above any
+   previously distributed build, including local test builds.
+2. Run `./scripts/sync-version.sh` and, if using Xcode, regenerate with `xcodegen`.
+3. Run `./scripts/sync-version.sh --check`, `./scripts/test.sh`, and `./build.sh`.
+4. Commit the two source files and generated settings. After the commit is merged,
+   create and push the matching tag, for example `git tag v1.0.3` followed by
+   `git push origin v1.0.3`.
 
-1. Update the `VERSION` file with the new marketing version (e.g., `1.0.3`):
-   ```bash
-   echo '1.0.3' > VERSION
-   ```
-
-2. Run the sync script to update `project.yml` and plist files:
-   ```bash
-   ./scripts/sync-version.sh [BUILD_NUMBER]
-   ```
-   The build number defaults to `1` if not specified. For subsequent builds of
-   the same version, increment it (e.g., `./scripts/sync-version.sh 2`).
-
-3. Commit the version changes:
-   ```bash
-   git add VERSION project.yml Packaging/*.plist
-   git commit -m "Bump version to 1.0.3"
-   ```
-
-4. Tag the release:
-   ```bash
-   git tag v1.0.3
-   git push origin main --tags
-   ```
-
-The GitHub Actions workflow validates that the git tag matches the `VERSION` file
-and will fail with a clear message if they don't match.
-
-### Build number assignment
-
-- **Development builds** (`./build.sh`): Build number is automatically derived
-  from the git commit count (`git rev-list --count HEAD`) if not explicitly set.
-- **GitHub Actions releases**: Build number is set to `$GITHUB_RUN_NUMBER`, ensuring
-  each workflow run gets a unique, monotonically increasing build number.
-- **Local release builds** (`./release.sh`): Build number must be explicitly set via
-  the `BUILD_NUMBER` environment variable.
-- **XcodeGen builds**: Use the `CURRENT_PROJECT_VERSION` from `project.yml`,
-  which should be synced using `./scripts/sync-version.sh`.
+The release workflow rejects a tag that differs from `VERSION` before accessing
+signing credentials. Workflow reruns reuse the committed build number; increment it
+and create a new version/tag when distributing a different build. Explicit `VERSION`
+and `BUILD_NUMBER` environment overrides remain available for local experiments;
+they do not update the committed settings or affect the tagged release workflow.
 
 ## Release pipeline
 
@@ -121,14 +97,12 @@ containing `swiftc`, `lipo`, `notarytool`, and `stapler`, plus macOS `pkgbuild` 
 `productbuild`. XcodeGen is only needed for
 the separate Xcode project workflow, not this pipeline.
 
-The `VERSION` is read from the `VERSION` file if not explicitly set. You must
-set `BUILD_NUMBER` explicitly for release builds:
+Version and build numbers are read from `VERSION` and `BUILD_NUMBER`:
 
 ```bash
 export APPLICATION_IDENTITY='Developer ID Application: YOUR_NAME (YOUR_TEAM_ID)'
 export INSTALLER_IDENTITY='Developer ID Installer: YOUR_NAME (YOUR_TEAM_ID)'
 export NOTARY_PROFILE='Peekdown-notary'
-export BUILD_NUMBER='2'
 
 ./release.sh --check
 ./release.sh
@@ -137,7 +111,7 @@ export BUILD_NUMBER='2'
 To override the VERSION file, export `VERSION` before running:
 ```bash
 export VERSION='1.0.3'
-export BUILD_NUMBER='1'
+export BUILD_NUMBER='11'
 ./release.sh
 ```
 
@@ -147,10 +121,10 @@ history service. A real release uploads the signed app and installer to Apple.
 Notarization may take time. The script fails on rejected submissions, invalid
 signatures, missing timestamps/runtime, mismatched teams, or failed assessments.
 
-Successful output is in `build/releases/1.0.1-2/`:
+Successful output is in `build/releases/<version>-<build>/`:
 
-- `Peekdown-1.0.1.pkg` — distribute this signed, stapled installer.
-- `Peekdown-1.0.1.zip` — the signed, stapled app for manual user installation.
+- `Peekdown-<version>.pkg` — distribute this signed, stapled installer.
+- `Peekdown-<version>.zip` — the signed, stapled app for manual user installation.
 - `SHA256SUMS` — checksums of the final installer and ZIP.
 - `Peekdown.app` — signed and stapled app contained in the installer.
 - Submission results and Apple's notarization logs for both submissions.
@@ -208,8 +182,7 @@ Push a tag matching `v*` (e.g., `v1.0.3`) to trigger an automated release. The
 workflow validates that the git tag matches the `VERSION` file, imports signing
 certificates into a temporary keychain, runs `./release.sh`, publishes a GitHub
 Release with the signed `.pkg`, `.zip`, and `SHA256SUMS`, and updates the Homebrew
-tap's cask formula. No signing credentials are committed. The workflow sets
-`BUILD_NUMBER` to `$GITHUB_RUN_NUMBER`, ensuring each run gets a unique build number.
+tap's cask formula. No signing credentials are committed. The workflow uses the committed `BUILD_NUMBER` file for reproducible numbering.
 
 ### Required GitHub Actions secrets
 
@@ -258,8 +231,9 @@ Before pushing a release tag, ensure the `VERSION` file matches the desired vers
 
 ```bash
 echo '1.0.3' > VERSION
+echo '11' > BUILD_NUMBER # choose a number above all previously distributed builds
 ./scripts/sync-version.sh
-git add VERSION project.yml Packaging/*.plist
+git add VERSION BUILD_NUMBER project.yml Packaging/*.plist
 git commit -m "Bump version to 1.0.3"
 git push origin main
 
@@ -269,7 +243,7 @@ git push origin v1.0.3
 
 The workflow validates that the tag matches the `VERSION` file and fails early with
 a clear message if they don't match. It derives `VERSION=1.0.3` and `BUILD_NUMBER`
-from the tag and run number, runs the tests and release script, creates the GitHub
+from the tag and committed build-number file, runs the tests and release script, creates the GitHub
 Release, and updates the Homebrew tap. Monitor progress at **Actions → Release**.
 The release appears at `https://github.com/h0ck3ystyx/peekdown/releases/tag/v1.0.3`.
 

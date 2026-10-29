@@ -19,30 +19,16 @@ jobs:
           VERSION=${GITHUB_REF#refs/tags/v}
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-          echo "build_number=$GITHUB_RUN_NUMBER" >> $GITHUB_OUTPUT
+          echo "build_number=$(cat BUILD_NUMBER)" >> $GITHUB_OUTPUT
 
       - name: Validate tag matches VERSION file
         run: |
-          VERSION_FILE=$(cat VERSION | tr -d '[:space:]')
-          TAG_VERSION=${{ steps.version.outputs.version }}
-          
-          echo "VERSION file contains: $VERSION_FILE"
-          echo "Git tag version: $TAG_VERSION"
-          
-          if [ "$VERSION_FILE" != "$TAG_VERSION" ]; then
-            echo "❌ Error: Git tag v$TAG_VERSION does not match VERSION file ($VERSION_FILE)"
-            echo ""
-            echo "Before pushing a release tag, update the VERSION file:"
-            echo "  1. echo '$TAG_VERSION' > VERSION"
-            echo "  2. ./scripts/sync-version.sh"
-            echo "  3. git add VERSION project.yml Packaging/*.plist"
-            echo "  4. git commit -m 'Bump version to $TAG_VERSION'"
-            echo "  5. git tag v$TAG_VERSION"
-            echo "  6. git push origin main --tags"
+          ./scripts/sync-version.sh --check
+          source scripts/version.sh
+          test "${GITHUB_REF#refs/tags/v}" = "$VERSION" || {
+            echo 'Release tag must match VERSION; see RELEASE.md' >&2
             exit 1
-          fi
-          
-          echo "✓ Git tag v$TAG_VERSION matches VERSION file"
+          }
 
       - name: Set up signing certificates
         env:

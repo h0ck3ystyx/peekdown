@@ -6,16 +6,7 @@ SDK="$(xcrun --sdk macosx --show-sdk-path)"
 BUILD="build/local"
 DEST="$BUILD/Peekdown.app"
 IDENTITY="${APPLICATION_IDENTITY:--}"
-# Read VERSION from file if not already set
-if [[ -z "${VERSION:-}" ]]; then
-    VERSION=$(cat VERSION | tr -d '[:space:]')
-fi
-# Derive BUILD_NUMBER from git commit count if not already set
-if [[ -z "${BUILD_NUMBER:-}" ]]; then
-    BUILD_NUMBER=$(git rev-list --count HEAD 2>/dev/null || echo "1")
-fi
-[[ "$VERSION" =~ ^[0-9]+(\.[0-9]+){0,2}$ ]] || { echo "Invalid VERSION" >&2; exit 1; }
-[[ "$BUILD_NUMBER" =~ ^[0-9]+$ ]] || { echo "Invalid BUILD_NUMBER" >&2; exit 1; }
+source scripts/version.sh
 rm -rf "$BUILD"
 mkdir -p "$DEST/Contents/MacOS" "$DEST/Contents/Resources" "$DEST/Contents/PlugIns"
 compile() {
