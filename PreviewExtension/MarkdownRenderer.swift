@@ -106,6 +106,41 @@ enum MarkdownRenderer {
         return out
     }
 
+    // MARK: - Link scheme validation
+
+    private static func isAllowedScheme(_ url: String) -> Bool {
+        // Trim whitespace and newlines
+        let trimmed = url.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Return false for empty strings or strings without a colon
+        guard !trimmed.isEmpty, trimmed.contains(":") else {
+            return false
+        }
+        
+        // Extract scheme (everything before first colon, lowercased)
+        guard let colonIndex = trimmed.firstIndex(of: ":") else {
+            return false
+        }
+        let scheme = trimmed[..<colonIndex].lowercased()
+        
+        // Check allowed schemes
+        switch scheme {
+        case "http", "https":
+            // For http/https, verify there's a // after the colon and something after that
+            let afterColon = trimmed.index(after: colonIndex)
+            guard afterColon < trimmed.endIndex else { return false }
+            let rest = String(trimmed[afterColon...])
+            // Must start with // and have more content
+            return rest.hasPrefix("//") && rest.count > 2
+        case "mailto":
+            // For mailto, just need something after the colon
+            let afterColon = trimmed.index(after: colonIndex)
+            return afterColon < trimmed.endIndex
+        default:
+            return false
+        }
+    }
+
     // MARK: - Block-level matchers
 
     private static func atxHeading(_ line: String) -> (level: Int, text: String)? {
@@ -141,6 +176,8 @@ enum MarkdownRenderer {
 
     private static func isTableSeparator(_ line: String) -> Bool {
         let t = line.trimmingCharacters(in: .whitespaces)
+        // Guard against catastrophic backtracking: limit line length for regex matching
+        guard t.count < 10_000 else { return false }
         return t.range(of: "^\\|?\\s*:?-+:?\\s*(\\|\\s*:?-+:?\\s*)+\\|?\\s*$", options: .regularExpression) != nil
     }
 
@@ -473,9 +510,12 @@ enum MarkdownRenderer {
             // Link [text](url)
             if c == "[", let parsed = parseLink(String(chars[i...]), start: 0) {
                 var linkAttrs = base
-                linkAttrs[.foregroundColor] = NSColor.systemBlue
-                linkAttrs[.underlineStyle] = NSUnderlineStyle.single.rawValue
-                if !parsed.url.isEmpty { linkAttrs[.link] = parsed.url }
+                // Only make it clickable if the scheme is allowed
+                if !parsed.url.isEmpty && isAllowedScheme(parsed.url) {
+                    linkAttrs[.foregroundColor] = NSColor.systemBlue
+                    linkAttrs[.underlineStyle] = NSUnderlineStyle.single.rawValue
+                    linkAttrs[.link] = parsed.url
+                }
                 result.append(renderInline(parsed.label, linkAttrs))
                 i += parsed.end; continue
             }
