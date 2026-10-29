@@ -25,7 +25,8 @@ class Versions(unittest.TestCase):
                               cwd=self.root, capture_output=True)
 
     def test_build_drift_and_repair(self):
-        (self.root / "BUILD_NUMBER").write_text("11\n")
+        build_file = self.root / "BUILD_NUMBER"
+        build_file.write_text(str(int(build_file.read_text()) + 1) + "\n")
         self.assertNotEqual(self.run_sync("--check").returncode, 0)
         self.assertEqual(self.run_sync().returncode, 0)
         self.assertEqual(self.run_sync("--check").returncode, 0)
@@ -44,7 +45,8 @@ class Versions(unittest.TestCase):
         path = self.root / "Packaging/ThumbExt-Info.plist"
         path.write_text(path.read_text().replace("CFBundleVersion", "MissingBuild"))
         before = (self.root / "project.yml").read_bytes()
-        (self.root / "BUILD_NUMBER").write_text("11\n")
+        build_file = self.root / "BUILD_NUMBER"
+        build_file.write_text(str(int(build_file.read_text()) + 1) + "\n")
         self.assertNotEqual(self.run_sync().returncode, 0)
         self.assertEqual((self.root / "project.yml").read_bytes(), before)
 
