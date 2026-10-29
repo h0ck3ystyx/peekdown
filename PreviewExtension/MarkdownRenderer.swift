@@ -11,6 +11,7 @@ enum MarkdownRenderer {
 // Reference state belongs to one document, including recursive inline/block rendering.
 // Never share mutable footnote numbering between simultaneous Quick Look requests.
 private final class RenderingSession {
+    private var highlightBudget = SyntaxHighlighter.maxDocumentLength
     private var definitions: [String: [String]] = [:]
     private var referenceOrder: [String] = []
     private var referenceNumbers: [String: Int] = [:]
@@ -82,13 +83,14 @@ private final class RenderingSession {
 
             // Fenced code block
             if let fence = fenceMarker(t) {
+                let hint = String(t.dropFirst(fence.count))
                 var code: [String] = []
                 i += 1
                 while i < lines.count && !isClosingFence(lines[i], marker: fence) {
                     code.append(lines[i]); i += 1
                 }
                 i += 1 // skip closing fence
-                out.append(codeBlock(code.joined(separator: "\n"), fontSize: fontSize))
+                out.append(codeBlock(code.joined(separator: "\n"), fontSize: fontSize, hint: hint))
                 continue
             }
 
@@ -409,7 +411,7 @@ private final class RenderingSession {
         return out
     }
 
-    private func codeBlock(_ code: String, fontSize: CGFloat) -> NSAttributedString {
+    private func codeBlock(_ code: String, fontSize: CGFloat, hint: String = "") -> NSAttributedString {
         let ps = NSMutableParagraphStyle()
         ps.paragraphSpacing = 8
         let attrs: [NSAttributedString.Key: Any] = [
@@ -419,6 +421,12 @@ private final class RenderingSession {
             .paragraphStyle: ps
         ]
         let out = NSMutableAttributedString(string: code, attributes: attrs)
+        let length = out.length
+        if length <= SyntaxHighlighter.maxBlockLength, length <= highlightBudget,
+           let language = SyntaxHighlighter.Language(hint: hint) {
+            highlightBudget -= length
+            SyntaxHighlighter.highlight(out, code: code, language: language)
+        }
         out.append(NSAttributedString(string: "\n"))
         return out
     }
