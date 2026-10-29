@@ -23,15 +23,21 @@ targets:
     sources:
       - path: LICENSE
         buildPhase: resources
+      - path: Peekdown/Resources
+        buildPhase: resources
       - path: Peekdown
         excludes:
           - "Info.plist"
           - "*.entitlements"
+          - "Resources"
     info:
       path: Peekdown/Info.plist
       properties:
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         LSMinimumSystemVersion: "$(MACOSX_DEPLOYMENT_TARGET)"
         NSPrincipalClass: NSApplication
+        CFBundleIconFile: Peekdown.icns
         CFBundleDocumentTypes:
           - CFBundleTypeName: Markdown Document
             CFBundleTypeRole: None
@@ -74,6 +80,8 @@ targets:
     info:
       path: PreviewExtension/Info.plist
       properties:
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         CFBundleDisplayName: Peekdown Preview
         LSMinimumSystemVersion: "$(MACOSX_DEPLOYMENT_TARGET)"
         NSExtension:
@@ -106,6 +114,8 @@ targets:
     info:
       path: ThumbnailExtension/Info.plist
       properties:
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         CFBundleDisplayName: Peekdown Thumbnail
         LSMinimumSystemVersion: "$(MACOSX_DEPLOYMENT_TARGET)"
         NSExtension:
