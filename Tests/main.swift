@@ -260,7 +260,7 @@ for name in [NSAppearance.Name.aqua, .darkAqua] {
         precondition((attribute(.font, at: "let", in: colored) as! NSFont).isFixedPitch)
         precondition(links(colored).isEmpty)
         // The actual code background is an opaque dynamic color.
-        let background = attribute(.backgroundColor, at: "let", in: colored) as! NSColor
+        let background = attribute(.peekdownCodeBackground, at: "let", in: colored) as! NSColor
         func luminance(_ color: NSColor) -> CGFloat {
             let rgb = color.usingColorSpace(.sRGB)!
             func linear(_ v: CGFloat) -> CGFloat { v <= 0.04045 ? v / 12.92 : pow((v + 0.055) / 1.055, 2.4) }
@@ -300,3 +300,40 @@ precondition(denseOutput.string.contains(denseBlock))
 let denseTime = CFAbsoluteTimeGetCurrent() - denseStart
 precondition(denseTime < 5, "Dense highlighted input exceeded rendering budget")
 print("Dense syntax document rendered in \(String(format: "%.3f", denseTime))s")
+
+// Block shading must cover whitespace/wrapped lines rather than individual runs.
+let panelDocument = render("```swift\nlet x = 1\n\nlet long = \"a long string that wraps at a narrow width\"\n```\n\n```json\n{}\n```")
+var blockRanges: [NSRange] = []
+panelDocument.enumerateAttribute(.peekdownCodeBlock, in: NSRange(location: 0, length: panelDocument.length)) { marker, range, _ in
+    if marker != nil { blockRanges.append(range) }
+}
+precondition(blockRanges.count == 2, "Adjacent code blocks need separate panels")
+precondition(attribute(.backgroundColor, at: "let", in: panelDocument) == nil, "Code must not use per-character background shading")
+let panelParagraph = attribute(.paragraphStyle, at: "let", in: panelDocument) as! NSParagraphStyle
+precondition(panelParagraph.headIndent == 12 && panelParagraph.tailIndent == -12)
+precondition(panelParagraph.paragraphSpacing == 0)
+let panelStorage = NSTextStorage(attributedString: panelDocument)
+let panelLayout = CodeBlockLayoutManager()
+let panelContainer = NSTextContainer(containerSize: NSSize(width: 280, height: 4000))
+panelStorage.addLayoutManager(panelLayout)
+panelLayout.addTextContainer(panelContainer)
+panelLayout.ensureLayout(for: panelContainer)
+let panelGlyphs = panelLayout.glyphRange(forCharacterRange: blockRanges[0], actualCharacterRange: nil)
+let firstPanelLine = panelLayout.lineFragmentUsedRect(forGlyphAt: panelGlyphs.location, effectiveRange: nil)
+let lastPanelLine = panelLayout.lineFragmentUsedRect(forGlyphAt: NSMaxRange(panelGlyphs)-1, effectiveRange: nil)
+let panelImage = NSImage(size: NSSize(width: 300, height: 600))
+panelImage.lockFocusFlipped(true)
+NSColor.white.setFill()
+NSRect(x: 0, y: 0, width: 300, height: 600).fill()
+panelLayout.drawBackground(forGlyphRange: panelLayout.glyphRange(for: panelContainer), at: .zero)
+panelImage.unlockFocus()
+let panelBitmap = NSBitmapImageRep(data: panelImage.tiffRepresentation!)!
+let sampleX = 260
+let sampleY = Int(firstPanelLine.midY)
+let panelColor = panelBitmap.colorAt(x: sampleX, y: sampleY)!
+precondition(panelColor != panelBitmap.colorAt(x: 295, y: sampleY), "Panel must extend to the available width")
+for y in Int(firstPanelLine.midY)...Int(lastPanelLine.midY) {
+    precondition(panelBitmap.colorAt(x: sampleX, y: y) == panelColor, "Panel must have continuous color across blank/wrapped lines")
+}
+precondition(links(panelDocument).isEmpty)
+print("Passed continuous code panels, separate blocks, wrapping, blank lines, and padding")

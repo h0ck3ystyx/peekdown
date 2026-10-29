@@ -8,7 +8,14 @@ private let linkLog = Logger(subsystem: "com.markdownpreview.app.preview", categ
 /// shows it in an NSTextView without WebKit or JavaScript.
 final class PreviewViewController: NSViewController, QLPreviewingController, NSTextViewDelegate {
 
-    private let textView = NSTextView()
+    private let textView: NSTextView = {
+        let storage = NSTextStorage()
+        let layout = CodeBlockLayoutManager()
+        let container = NSTextContainer()
+        storage.addLayoutManager(layout)
+        layout.addTextContainer(container)
+        return NSTextView(frame: .zero, textContainer: container)
+    }()
     private let linkStatus = NSTextField(wrappingLabelWithString: "")
     private let linkBanner = NSStackView()
     private lazy var copyLinkButton = NSButton(title: "Copy link", target: self, action: #selector(copyFailedLink))

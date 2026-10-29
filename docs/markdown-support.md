@@ -111,7 +111,9 @@ block has one of these language hints (case-insensitive; the first word is used)
 Keywords, comments, quoted strings, and numeric literals receive semantic colors;
 JSON/YAML keys, shell variables outside strings, and capitalized type-like names
 are also recognized where applicable. Fonts, whitespace, and literal source text
-are preserved. Colors adapt to system light/dark appearance. URLs inside code
+are preserved. Code blocks use a continuous rounded background, horizontal padding,
+and compact line spacing rather than shading each text line. Colors adapt to
+system light/dark appearance. URLs inside code
 remain literal text.
 
 This is a small offline lexer, not a compiler or full language grammar. String
