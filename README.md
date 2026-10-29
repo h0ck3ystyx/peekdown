@@ -22,21 +22,35 @@ Markdown is parsed to an `NSAttributedString` in Swift and drawn with AppKit. No
 - Light and dark mode (system label colors).
 - The host app declares the `net.daringfireball.markdown` UTI so Finder routes `.md` files to this extension.
 
+## Installation
+
+### Homebrew (recommended)
+
+```bash
+brew install --cask h0ck3ystyx/tap/peekdown
+```
+
+### Manual installation
+
+Download the latest release from the [releases page](https://github.com/h0ck3ystyx/peekdown/releases/latest).
+
+- **Installer package**: Download and run `Peekdown-VERSION.pkg`
+- **ZIP archive**: Download `Peekdown-VERSION.zip`, extract, and move `Peekdown.app` to `~/Applications`
+
+After installation, launch `Peekdown.app` once, then select any `.md` file in Finder
+and press **Space** to preview it.
+
 ## Distribution releases
 
-Use [RELEASE.md](RELEASE.md) for Developer ID certificate setup and the signed,
-notarized ZIP and `.pkg` pipeline. The release build supports Intel and Apple Silicon.
+Signed and notarized releases are built automatically via GitHub Actions when a `v*`
+tag is pushed. See [RELEASE.md](RELEASE.md) for release automation setup and local
+release instructions. The release build supports Intel and Apple Silicon.
 Development signing and ad-hoc builds below are for local use.
 
-The `.pkg` offers **Install for me only** (`~/Applications`, no admin password)
+The installer `.pkg` offers **Install for me only** (`~/Applications`, no admin password)
 and **Install for all users of this computer** (`/Applications`, administrator
 authorization). Use **Change Install Location…** if Installer skips the
 destination screen.
-
-For installation without administrator access, extract the release ZIP, move
-`Peekdown.app` into `~/Applications` (create the folder if needed), and launch it
-once. Select a Markdown file in Finder and press Space. You may need to enable
-the Quick Look extension in System Settings.
 
 Peekdown was previously named MarkdownPreview. After installing Peekdown, remove
 the old `MarkdownPreview.app` copy to avoid duplicate extension registrations.

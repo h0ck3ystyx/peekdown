@@ -63,9 +63,7 @@ jobs:
           xcode-version: latest-stable
       
       - name: Build application
-        run: |
-          VERSION=$(cat VERSION | tr -d '[:space:]')
-          ./build.sh
+        run: ./build.sh
         env:
           APPLICATION_IDENTITY: "-"
           BUILD_NUMBER: "${{ github.run_number }}"

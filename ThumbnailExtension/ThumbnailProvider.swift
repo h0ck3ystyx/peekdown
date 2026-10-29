@@ -17,6 +17,17 @@ final class ThumbnailProvider: QLThumbnailProvider {
 
         // Read the file off the main thread; the drawing block runs on main.
         DispatchQueue.global(qos: .userInitiated).async {
+            // Check file size before reading
+            guard let fileSize = (try? FileManager.default.attributesOfItem(atPath: url.path))?[.size] as? Int,
+                  fileSize <= RenderingConstants.maxFileSize else {
+                let reply = QLThumbnailReply(contextSize: size) {
+                    Self.drawOversized(in: size)
+                    return true
+                }
+                handler(reply, nil)
+                return
+            }
+            
             let raw = (try? String(contentsOf: url, encoding: .utf8))
                 ?? (try? String(contentsOf: url, encoding: .isoLatin1)) ?? ""
             let title = Self.title(in: raw)
@@ -68,6 +79,27 @@ final class ThumbnailProvider: QLThumbnailProvider {
     }
 
     // MARK: - Drawing
+
+    private static func drawOversized(in size: CGSize) {
+        let dark = UserDefaults.standard.string(forKey: "AppleInterfaceStyle") == "Dark"
+        let bg = dark ? NSColor(calibratedWhite: 0.10, alpha: 1) : NSColor(calibratedWhite: 0.97, alpha: 1)
+        let fg = dark ? NSColor(calibratedWhite: 0.92, alpha: 1) : NSColor(calibratedWhite: 0.12, alpha: 1)
+        let accent = NSColor(calibratedRed: 0.90, green: 0.46, blue: 0.10, alpha: 1)
+        
+        bg.setFill()
+        NSBezierPath(roundedRect: CGRect(origin: .zero, size: size), xRadius: 5, yRadius: 5).fill()
+        
+        accent.setFill()
+        NSBezierPath(rect: CGRect(x: 0, y: size.height - 4, width: size.width, height: 4)).fill()
+        
+        let pad = max(10, size.width * 0.08)
+        let text = "File too large"
+        let font = NSFont.systemFont(ofSize: max(11, size.width * 0.06), weight: .semibold)
+        let attrs: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: fg]
+        let rect = CGRect(x: pad, y: size.height / 2 - 12, width: size.width - pad * 2, height: 24)
+        NSAttributedString(string: text, attributes: attrs)
+            .draw(with: rect, options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine])
+    }
 
     private static func draw(title: String, snippet: String, in size: CGSize) {
         let dark = UserDefaults.standard.string(forKey: "AppleInterfaceStyle") == "Dark"
