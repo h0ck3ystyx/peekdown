@@ -11,6 +11,7 @@ printf '%s\n' "$DOMAINS" | grep -Fx CurrentUserHomeDirectory >/dev/null
 printf '%s\n' "$DOMAINS" | grep -Fx LocalSystem >/dev/null
 /usr/bin/python3 - "$CHECK/expanded" <<'PY'
 import pathlib
+import plistlib
 import sys
 import xml.etree.ElementTree as ET
 root = pathlib.Path(sys.argv[1])
@@ -32,6 +33,9 @@ assert {p.name for p in payload.iterdir()} == {'Applications'}, 'Payload must re
 app = payload / 'Applications/Peekdown.app'
 assert app.is_dir()
 assert (app / 'Contents/Resources/LICENSE').is_file()
+app_info = plistlib.loads((app / 'Contents/Info.plist').read_bytes())
+icon = app / 'Contents/Resources' / app_info['CFBundleIconFile']
+assert icon.is_file() and icon.read_bytes()[:4] == b'icns', 'Native app icon must ship in the payload'
 assert (root / 'Resources/Welcome.html').is_file()
 assert {p.name for p in (app / 'Contents/PlugIns').iterdir()} == {
     'PreviewExtension.appex', 'ThumbnailExtension.appex'

@@ -39,6 +39,7 @@ cp Packaging/PreviewExt-Info.plist "$PE/Contents/Info.plist"
 cp Packaging/ThumbExt-Info.plist "$TE/Contents/Info.plist"
 cp Packaging/App-Info.plist "$DEST/Contents/Info.plist"
 cp LICENSE "$DEST/Contents/Resources/LICENSE"
+cp Peekdown/Resources/Peekdown.icns "$DEST/Contents/Resources/Peekdown.icns"
 for bundle in "$PE" "$TE" "$DEST"; do
     /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$bundle/Contents/Info.plist"
     /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" "$bundle/Contents/Info.plist"

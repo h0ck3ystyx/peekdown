@@ -8,6 +8,8 @@
     <string>Peekdown</string>
     <key>CFBundleIdentifier</key>
     <string>com.markdownpreview.app</string>
+    <key>CFBundleIconFile</key>
+    <string>Peekdown.icns</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
