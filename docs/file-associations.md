@@ -44,7 +44,8 @@ user's Launch Services preferences during installation or removal.
 The universal build and strict signatures passed with imported type declarations.
 The isolated registration/removal check preserved all five current default openers.
 This Mac has Xcode, VS Code, and Obsidian installed, but its existing Markdown
-association still points to the older installed Peekdown. No user defaults were
+associations point to the older installed Peekdown for `.md`/`.markdown` and
+Cursor for `.mdown`/`.mkd`/`.mkdn`. No user defaults were
 changed by this check. No competing third-party Markdown Quick Look provider was
 registered, so the competing-provider and signed-install/removal acceptance matrix
 above remains a manual release check.
