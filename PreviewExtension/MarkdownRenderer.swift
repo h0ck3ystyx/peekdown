@@ -109,28 +109,33 @@ enum MarkdownRenderer {
     // MARK: - Link scheme validation
 
     private static func isAllowedScheme(_ url: String) -> Bool {
-        // Trim whitespace and newlines, strip control characters
-        let cleaned = url
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .filter { $0 >= " " && $0 != "\u{7F}" }
+        // Trim whitespace and newlines
+        let trimmed = url.trimmingCharacters(in: .whitespacesAndNewlines)
         
-        // Return false for empty strings
-        guard !cleaned.isEmpty else { return false }
-        
-        // Parse with URL to extract scheme
-        guard let parsedURL = URL(string: cleaned),
-              let scheme = parsedURL.scheme?.lowercased() else {
-            // No valid scheme found, treat as plain text
+        // Return false for empty strings or strings without a colon
+        guard !trimmed.isEmpty, trimmed.contains(":") else {
             return false
         }
+        
+        // Extract scheme (everything before first colon, lowercased)
+        guard let colonIndex = trimmed.firstIndex(of: ":") else {
+            return false
+        }
+        let scheme = trimmed[..<colonIndex].lowercased()
         
         // Check allowed schemes
         switch scheme {
         case "http", "https":
-            // For http/https, require a non-empty host
-            return parsedURL.host?.isEmpty == false
+            // For http/https, verify there's a // after the colon and something after that
+            let afterColon = trimmed.index(after: colonIndex)
+            guard afterColon < trimmed.endIndex else { return false }
+            let rest = String(trimmed[afterColon...])
+            // Must start with // and have more content
+            return rest.hasPrefix("//") && rest.count > 2
         case "mailto":
-            return true
+            // For mailto, just need something after the colon
+            let afterColon = trimmed.index(after: colonIndex)
+            return afterColon < trimmed.endIndex
         default:
             return false
         }
