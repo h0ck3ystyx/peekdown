@@ -18,9 +18,16 @@ Markdown is parsed to an `NSAttributedString` in Swift and drawn with AppKit. No
   - GFM task lists (`- [x]` / `- [ ]` → ☑ / ☐)
   - tables (box-drawn, width-capped and word-wrapped)
   - links, images (alt text), blockquotes, horizontal rules
+  - URL/email recognition with a Copy link fallback, numbered footnotes, and GitHub-style alerts (in current source; not in v1.0.2)
   - YAML front-matter stripping
 - Light and dark mode (system label colors).
 - The host app declares the `net.daringfireball.markdown` UTI so Finder routes `.md` files to this extension.
+
+See [native Markdown support](docs/markdown-support.md) for syntax examples and
+limitations, including the new autolinks, footnotes, and alert support. Quick Look
+may block opening external links; copying a recognized destination is supported.
+The host app registers Markdown types for previews without claiming to be a
+document editor or viewer.
 
 ## Installation
 
@@ -150,3 +157,15 @@ Packaging/               # hand-written plists used by build.sh
 ## License
 
 Peekdown is available under the [MIT License](LICENSE).
+
+### Quick Look’s “Open with” button
+
+This button uses the document’s macOS file association; it does not select the
+Quick Look extension. Older Peekdown builds declared themselves an Owner-rank
+Markdown viewer and could appear there instead of your editor. Current source
+uses document role/rank `None` while retaining Markdown type declarations.
+
+To restore Xcode (or another editor), select a `.md` file in Finder, choose
+**Get Info → Open with**, select the editor, then choose **Change All…** if you
+want it to be the default for that file type. Installing a corrected build does
+not explicitly reset your existing editor preferences.
