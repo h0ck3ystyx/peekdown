@@ -38,7 +38,7 @@ targets:
             LSHandlerRank: None
             CFBundleTypeExtensions: [md, markdown, mdown, mkd, mkdn]
             LSItemContentTypes: [net.daringfireball.markdown, public.markdown]
-        UTExportedTypeDeclarations:
+        UTImportedTypeDeclarations:
           - UTTypeIdentifier: net.daringfireball.markdown
             UTTypeDescription: Markdown
             UTTypeConformsTo: [public.plain-text]
