@@ -50,7 +50,7 @@ struct ContentView: View {
 
             Divider()
 
-            Text("Renders CommonMark · GFM tables · task lists · strikethrough · code blocks · front matter")
+            Text("Markdown · tables · task lists · code blocks · autolinks · footnotes · alerts")
                 .font(.caption)
                 .foregroundColor(.secondary)
         }

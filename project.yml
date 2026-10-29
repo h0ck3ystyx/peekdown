@@ -34,8 +34,8 @@ targets:
         NSPrincipalClass: NSApplication
         CFBundleDocumentTypes:
           - CFBundleTypeName: Markdown Document
-            CFBundleTypeRole: Viewer
-            LSHandlerRank: Owner
+            CFBundleTypeRole: None
+            LSHandlerRank: None
             CFBundleTypeExtensions: [md, markdown, mdown, mkd, mkdn]
             LSItemContentTypes: [net.daringfireball.markdown, public.markdown]
         UTExportedTypeDeclarations:
