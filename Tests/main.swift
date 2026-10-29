@@ -214,3 +214,127 @@ for blocked in [javascriptTest, absolutePathTest, relativePathTest, tildePathTes
 }
 precondition(links(httpTest).first?.1 == "http://example.com")
 precondition(links(httpsTest).first?.1 == "https://example.com")
+
+// MARK: - Syntax highlighting
+func syntaxTokens(_ code: String, _ language: SyntaxHighlighter.Language) -> [(String, SyntaxHighlighter.Kind)] {
+    let source = code as NSString
+    return SyntaxHighlighter.tokens(in: code, language: language).map { (source.substring(with: $0.range), $0.kind) }
+}
+let syntaxCases: [(SyntaxHighlighter.Language, String, String, SyntaxHighlighter.Kind)] = [
+    (.swift, "let value: String = \"hello\" // note", "let", .keyword),
+    (.swift, "/* outer /* nested */ end */ let n = 42", "/* outer /* nested */ end */", .comment),
+    (.shell, "echo $HOME # note", "$HOME", .variable),
+    (.json, "{\"enabled\": true, \"count\": 12}", "\"enabled\"", .property),
+    (.yaml, "my-key: false # note", "my-key", .property),
+    (.python, "def greeting():\n    return \"hi\"", "def", .keyword),
+    (.python, "value = '''line\n# literal\nend'''", "'''line\n# literal\nend'''", .string),
+    (.javascript, "const link = \"https://example.org\"; // note", "\"https://example.org\"", .string),
+    (.typescript, "interface Person { age: number }", "interface", .keyword),
+    (.swift, "let 😀 = 1; let value = 2.5e-3", "2.5e-3", .number)
+]
+for (language, code, expected, kind) in syntaxCases {
+    precondition(syntaxTokens(code, language).contains { $0.0 == expected && $0.1 == kind }, "Missing \(kind) in \(language): \(expected)")
+}
+precondition(SyntaxHighlighter.Language(hint: "JS title=example") == .javascript)
+precondition(SyntaxHighlighter.Language(hint: "YML") == .yaml)
+precondition(SyntaxHighlighter.Language(hint: "unknown") == nil)
+let protectedCode = syntaxTokens("// let false 42\n\"let false 42\"", .swift)
+precondition(protectedCode.count == 2 && protectedCode[0].1 == .comment && protectedCode[1].1 == .string)
+precondition(!syntaxTokens("letter", .swift).contains { $0.1 == .keyword })
+precondition(!syntaxTokens("# not a JSON comment", .json).contains { $0.1 == .comment })
+for malformed in ["/* unclosed", "\"unterminated\\", "\"\"\"unterminated", "${unclosed", String(repeating: "😀", count: 2000)] {
+    for language in [SyntaxHighlighter.Language.swift, .python, .shell, .javascript] {
+        var end = 0
+        for token in SyntaxHighlighter.tokens(in: malformed, language: language) {
+            precondition(token.range.location >= end && NSMaxRange(token.range) <= (malformed as NSString).length)
+            end = NSMaxRange(token.range)
+        }
+    }
+}
+for name in [NSAppearance.Name.aqua, .darkAqua] {
+    NSAppearance(named: name)!.performAsCurrentDrawingAppearance {
+        let colored = render("```swift\nlet value = \"hello\" // note\n```")
+        let color = attribute(.foregroundColor, at: "let", in: colored) as! NSColor
+        let expected = SyntaxHighlighter.color(for: .keyword).usingColorSpace(.sRGB)!
+        precondition(color.usingColorSpace(.sRGB) == expected)
+        precondition((attribute(.font, at: "let", in: colored) as! NSFont).isFixedPitch)
+        precondition(links(colored).isEmpty)
+        // The actual code background is an opaque dynamic color.
+        let background = attribute(.peekdownCodeBackground, at: "let", in: colored) as! NSColor
+        func luminance(_ color: NSColor) -> CGFloat {
+            let rgb = color.usingColorSpace(.sRGB)!
+            func linear(_ v: CGFloat) -> CGFloat { v <= 0.04045 ? v / 12.92 : pow((v + 0.055) / 1.055, 2.4) }
+            return linear(rgb.redComponent)*0.2126 + linear(rgb.greenComponent)*0.7152 + linear(rgb.blueComponent)*0.0722
+        }
+        for kind in [SyntaxHighlighter.Kind.keyword, .comment, .string, .number, .type, .property, .variable] {
+            let a = luminance(SyntaxHighlighter.color(for: kind)), b = luminance(background)
+            precondition((max(a,b)+0.05)/(min(a,b)+0.05) >= 4.5, "Low syntax contrast for \(kind) in \(name)")
+        }
+    }
+}
+for source in ["```unknown\nlet value = 42\n```", "```\nlet value = 42\n```", "    let value = 42", "`let value = 42`"] {
+    let plain = render(source)
+    precondition((attribute(.foregroundColor, at: "let", in: plain) as! NSColor) == .labelColor)
+}
+let literal = "let message = \"😀 [link](https://example.org) [^note]\"\n// **literal** <script> & <tag>\n"
+let literalRendered = render("~~~swift\n" + literal + "~~~")
+precondition(literalRendered.string == literal && links(literalRendered).isEmpty)
+precondition((attribute(.font, at: "let", in: MarkdownRenderer.attributedString(from: "```swift\nlet x = 1\n```", fontSize: 22)) as! NSFont).pointSize == 21)
+let oversizedCode = "let " + String(repeating: "x", count: SyntaxHighlighter.maxBlockLength)
+precondition(SyntaxHighlighter.tokens(in: oversizedCode, language: .swift).isEmpty)
+let crowdedCode = String(repeating: "let ", count: SyntaxHighlighter.maxTokens + 1)
+precondition(SyntaxHighlighter.tokens(in: crowdedCode, language: .swift).isEmpty)
+let budgetBlock = "let " + String(repeating: "x", count: SyntaxHighlighter.maxBlockLength - 4)
+let budgetDocument = String(repeating: "```swift\n\(budgetBlock)\n```\n\n", count: 5)
+let budgetStart = CFAbsoluteTimeGetCurrent()
+let budgetOutput = render(budgetDocument)
+let lastLet = (budgetOutput.string as NSString).range(of: "let", options: .backwards)
+precondition((budgetOutput.attribute(.foregroundColor, at: lastLet.location, effectiveRange: nil) as! NSColor) == .labelColor)
+precondition(CFAbsoluteTimeGetCurrent() - budgetStart < 5, "Bounded syntax rendering took too long")
+print("Passed syntax languages, literal preservation, fallbacks, Unicode, contrast, font scaling, and resource bounds")
+
+let denseBlock = String(repeating: "let 1 ", count: 4000)
+let denseStart = CFAbsoluteTimeGetCurrent()
+let denseOutput = render(String(repeating: "```swift\n\(denseBlock)\n```\n", count: 10))
+precondition(denseOutput.string.contains(denseBlock))
+let denseTime = CFAbsoluteTimeGetCurrent() - denseStart
+precondition(denseTime < 5, "Dense highlighted input exceeded rendering budget")
+print("Dense syntax document rendered in \(String(format: "%.3f", denseTime))s")
+
+// Block shading must cover whitespace/wrapped lines rather than individual runs.
+let panelDocument = render("```swift\nlet x = 1\n\nlet long = \"a long string that wraps at a narrow width\"\n```\n\n```json\n{}\n```")
+var blockRanges: [NSRange] = []
+panelDocument.enumerateAttribute(.peekdownCodeBlock, in: NSRange(location: 0, length: panelDocument.length)) { marker, range, _ in
+    if marker != nil { blockRanges.append(range) }
+}
+precondition(blockRanges.count == 2, "Adjacent code blocks need separate panels")
+precondition(attribute(.backgroundColor, at: "let", in: panelDocument) == nil, "Code must not use per-character background shading")
+let panelParagraph = attribute(.paragraphStyle, at: "let", in: panelDocument) as! NSParagraphStyle
+precondition(panelParagraph.headIndent == 12 && panelParagraph.tailIndent == -12)
+precondition(panelParagraph.paragraphSpacing == 0)
+let panelStorage = NSTextStorage(attributedString: panelDocument)
+let panelLayout = CodeBlockLayoutManager()
+let panelContainer = NSTextContainer(containerSize: NSSize(width: 280, height: 4000))
+panelStorage.addLayoutManager(panelLayout)
+panelLayout.addTextContainer(panelContainer)
+panelLayout.ensureLayout(for: panelContainer)
+let panelGlyphs = panelLayout.glyphRange(forCharacterRange: blockRanges[0], actualCharacterRange: nil)
+let firstPanelLine = panelLayout.lineFragmentUsedRect(forGlyphAt: panelGlyphs.location, effectiveRange: nil)
+let lastPanelLine = panelLayout.lineFragmentUsedRect(forGlyphAt: NSMaxRange(panelGlyphs)-1, effectiveRange: nil)
+let panelImage = NSImage(size: NSSize(width: 300, height: 600))
+panelImage.lockFocusFlipped(true)
+NSColor.white.setFill()
+NSRect(x: 0, y: 0, width: 300, height: 600).fill()
+panelLayout.drawBackground(forGlyphRange: panelLayout.glyphRange(for: panelContainer), at: .zero)
+panelImage.unlockFocus()
+let panelBitmap = NSBitmapImageRep(data: panelImage.tiffRepresentation!)!
+let rasterScale = CGFloat(panelBitmap.pixelsWide) / panelImage.size.width
+let sampleX = Int(260 * rasterScale)
+let sampleY = Int(firstPanelLine.midY * rasterScale)
+let panelColor = panelBitmap.colorAt(x: sampleX, y: sampleY)!
+precondition(panelColor != panelBitmap.colorAt(x: Int(295 * rasterScale), y: sampleY), "Panel must extend to the available width")
+for y in Int(firstPanelLine.midY * rasterScale)...Int(lastPanelLine.midY * rasterScale) {
+    precondition(panelBitmap.colorAt(x: sampleX, y: y) == panelColor, "Panel must have continuous color across blank/wrapped lines")
+}
+precondition(links(panelDocument).isEmpty)
+print("Passed continuous code panels, separate blocks, wrapping, blank lines, and padding")

@@ -28,7 +28,7 @@ echo "==> Compiling universal extensions and app"
 compile PreviewExtension "$PE/Contents/MacOS/PreviewExtension" \
   -framework QuickLookUI -framework AppKit -application-extension \
   -Xlinker -e -Xlinker _NSExtensionMain \
-  Shared/MarkdownText.swift Shared/RenderingConstants.swift PreviewExtension/MarkdownRenderer.swift PreviewExtension/PreviewViewController.swift
+  Shared/MarkdownText.swift Shared/RenderingConstants.swift PreviewExtension/CodeBlockLayoutManager.swift PreviewExtension/SyntaxHighlighter.swift PreviewExtension/MarkdownRenderer.swift PreviewExtension/PreviewViewController.swift
 compile ThumbnailExtension "$TE/Contents/MacOS/ThumbnailExtension" \
   -framework QuickLookThumbnailing -framework AppKit -application-extension \
   -Xlinker -e -Xlinker _NSExtensionMain \

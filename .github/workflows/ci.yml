@@ -50,6 +50,8 @@ jobs:
             -framework AppKit -framework QuickLookUI \
             Shared/MarkdownText.swift \
             Shared/RenderingConstants.swift \
+            PreviewExtension/CodeBlockLayoutManager.swift \
+            PreviewExtension/SyntaxHighlighter.swift \
             PreviewExtension/MarkdownRenderer.swift \
             PreviewExtension/PreviewViewController.swift \
             Tests/main.swift

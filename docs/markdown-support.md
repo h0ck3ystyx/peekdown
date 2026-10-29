@@ -92,3 +92,42 @@ Run `./scripts/test.sh`. The suite checks the attributed text (link destinations
 reference numbering and styling, nested formatting, and callout colors in both
 appearances), plus malformed syntax and large documents. A combined sample is
 in [Tests/Fixtures/issue-1.md](../Tests/Fixtures/issue-1.md).
+
+## Fenced-code syntax highlighting (development source)
+
+The next release adds lightweight native lexical highlighting when a fenced code
+block has one of these language hints (case-insensitive; the first word is used):
+
+| Language | Fence hints |
+| --- | --- |
+| Swift | `swift` |
+| Shell | `sh`, `shell`, `bash`, `zsh` |
+| JSON | `json` |
+| YAML | `yaml`, `yml` |
+| Python | `python`, `py` |
+| JavaScript | `javascript`, `js` |
+| TypeScript | `typescript`, `ts` |
+
+Keywords, comments, quoted strings, and numeric literals receive semantic colors;
+JSON/YAML keys, shell variables outside strings, and capitalized type-like names
+are also recognized where applicable. Fonts, whitespace, and literal source text
+are preserved. Code blocks use a continuous rounded background, horizontal padding,
+and compact line spacing rather than shading each text line. Colors adapt to
+system light/dark appearance. URLs inside code
+remain literal text.
+
+This is a small offline lexer, not a compiler or full language grammar. String
+interpolation, JavaScript regex literals, shell heredocs, YAML block scalars, and
+Swift raw strings are not fully parsed; complex syntax may receive approximate
+colors. No embedded code runs, and no grammar or other resource is downloaded.
+Unlabelled fences, unknown languages (including JSX/TSX), and indented blocks stay
+plain monospaced text. Inline code is unchanged.
+
+Blocks above 65,536 UTF-16 units or exceeding 8,192 colored tokens stay plain.
+At most 262,144 UTF-16 units per document are considered for highlighting; later
+blocks remain plain when they do not fit the remaining budget. The complete text
+is still displayed. These additions are not in the v1.0.3 download.
+
+For visual acceptance, preview `Tests/Fixtures/syntax-highlighting.md` in Finder
+at several window sizes in Light and Dark appearance, checking long lines,
+comments/strings, Unicode, and the plain-code fallbacks.
