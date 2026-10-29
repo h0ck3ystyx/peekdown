@@ -328,11 +328,12 @@ NSRect(x: 0, y: 0, width: 300, height: 600).fill()
 panelLayout.drawBackground(forGlyphRange: panelLayout.glyphRange(for: panelContainer), at: .zero)
 panelImage.unlockFocus()
 let panelBitmap = NSBitmapImageRep(data: panelImage.tiffRepresentation!)!
-let sampleX = 260
-let sampleY = Int(firstPanelLine.midY)
+let rasterScale = CGFloat(panelBitmap.pixelsWide) / panelImage.size.width
+let sampleX = Int(260 * rasterScale)
+let sampleY = Int(firstPanelLine.midY * rasterScale)
 let panelColor = panelBitmap.colorAt(x: sampleX, y: sampleY)!
-precondition(panelColor != panelBitmap.colorAt(x: 295, y: sampleY), "Panel must extend to the available width")
-for y in Int(firstPanelLine.midY)...Int(lastPanelLine.midY) {
+precondition(panelColor != panelBitmap.colorAt(x: Int(295 * rasterScale), y: sampleY), "Panel must extend to the available width")
+for y in Int(firstPanelLine.midY * rasterScale)...Int(lastPanelLine.midY * rasterScale) {
     precondition(panelBitmap.colorAt(x: sampleX, y: y) == panelColor, "Panel must have continuous color across blank/wrapped lines")
 }
 precondition(links(panelDocument).isEmpty)
