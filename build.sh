@@ -6,10 +6,7 @@ SDK="$(xcrun --sdk macosx --show-sdk-path)"
 BUILD="build/local"
 DEST="$BUILD/Peekdown.app"
 IDENTITY="${APPLICATION_IDENTITY:--}"
-VERSION="${VERSION:-1.0}"
-BUILD_NUMBER="${BUILD_NUMBER:-1}"
-[[ "$VERSION" =~ ^[0-9]+(\.[0-9]+){0,2}$ ]] || { echo "Invalid VERSION" >&2; exit 1; }
-[[ "$BUILD_NUMBER" =~ ^[0-9]+$ ]] || { echo "Invalid BUILD_NUMBER" >&2; exit 1; }
+source scripts/version.sh
 rm -rf "$BUILD"
 mkdir -p "$DEST/Contents/MacOS" "$DEST/Contents/Resources" "$DEST/Contents/PlugIns"
 compile() {

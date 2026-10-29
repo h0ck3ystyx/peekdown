@@ -10,6 +10,19 @@ permissions:
   contents: read
 
 jobs:
+  validate-versions:
+    name: Validate Version Consistency
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      
+      - name: Validate version consistency
+        run: |
+          ./scripts/sync-version.sh --check
+          python3 Tests/test_versions.py
+
   test:
     name: Build and Test
     runs-on: macos-latest
@@ -27,8 +40,6 @@ jobs:
         run: ./build.sh
         env:
           APPLICATION_IDENTITY: "-"
-          VERSION: "1.0"
-          BUILD_NUMBER: "${{ github.run_number }}"
       
       - name: Run tests
         run: |
@@ -47,6 +58,24 @@ jobs:
       - name: Verify code signature
         run: |
           codesign --verify --deep --strict --verbose=2 build/local/Peekdown.app
+      
+      - name: Verify built version
+        run: |
+          source scripts/version.sh
+          BUILT_VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' build/local/Peekdown.app/Contents/Info.plist)
+          
+          echo "Expected version: $VERSION"
+          echo "Built app version: $BUILT_VERSION"
+          
+          if [ "$VERSION" != "$BUILT_VERSION" ]; then
+            echo "❌ Error: Built app version ($BUILT_VERSION) doesn't match VERSION file ($VERSION)"
+            exit 1
+          fi
+          
+          for bundle in build/local/Peekdown.app build/local/Peekdown.app/Contents/PlugIns/*.appex; do
+            test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$bundle/Contents/Info.plist")" = "$VERSION"
+            test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$bundle/Contents/Info.plist")" = "$BUILD_NUMBER"
+          done
 
   security-scan:
     name: Security Scan

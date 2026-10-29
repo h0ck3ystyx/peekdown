@@ -8,10 +8,7 @@ fi
 : "${APPLICATION_IDENTITY:?Set APPLICATION_IDENTITY to Developer ID Application: Name (TEAMID)}"
 : "${INSTALLER_IDENTITY:?Set INSTALLER_IDENTITY to Developer ID Installer: Name (TEAMID)}"
 : "${NOTARY_PROFILE:?Set NOTARY_PROFILE to a notarytool Keychain profile}"
-: "${VERSION:?Set VERSION, for example 1.0.1}"
-: "${BUILD_NUMBER:?Set BUILD_NUMBER, for example 2}"
-[[ "$VERSION" =~ ^[0-9]+(\.[0-9]+){0,2}$ ]] || { echo 'Invalid VERSION' >&2; exit 1; }
-[[ "$BUILD_NUMBER" =~ ^[0-9]+$ ]] || { echo 'Invalid BUILD_NUMBER' >&2; exit 1; }
+source scripts/version.sh
 [[ "$APPLICATION_IDENTITY" == 'Developer ID Application: '* ]] || { echo 'Developer ID Application identity required' >&2; exit 1; }
 [[ "$INSTALLER_IDENTITY" == 'Developer ID Installer: '* ]] || { echo 'Developer ID Installer identity required' >&2; exit 1; }
 TEAM="${APPLICATION_IDENTITY##* (}"

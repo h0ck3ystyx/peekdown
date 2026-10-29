@@ -11,7 +11,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Extract version from tag
         id: version
@@ -19,7 +19,16 @@ jobs:
           VERSION=${GITHUB_REF#refs/tags/v}
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-          echo "build_number=$GITHUB_RUN_NUMBER" >> $GITHUB_OUTPUT
+          echo "build_number=$(cat BUILD_NUMBER)" >> $GITHUB_OUTPUT
+
+      - name: Validate tag matches VERSION file
+        run: |
+          ./scripts/sync-version.sh --check
+          source scripts/version.sh
+          test "${GITHUB_REF#refs/tags/v}" = "$VERSION" || {
+            echo 'Release tag must match VERSION; see RELEASE.md' >&2
+            exit 1
+          }
 
       - name: Set up signing certificates
         env:
