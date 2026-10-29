@@ -109,15 +109,31 @@ enum MarkdownRenderer {
     // MARK: - Link scheme validation
 
     private static func isAllowedScheme(_ url: String) -> Bool {
-        let trimmed = url.trimmingCharacters(in: .whitespaces)
-        let allowedSchemes = ["http:", "https:", "mailto:"]
-        for scheme in allowedSchemes {
-            if trimmed.lowercased().hasPrefix(scheme) {
-                return true
-            }
+        // Trim whitespace and newlines, strip control characters
+        let cleaned = url
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .filter { $0 >= " " && $0 != "\u{7F}" }
+        
+        // Return false for empty strings
+        guard !cleaned.isEmpty else { return false }
+        
+        // Parse with URL to extract scheme
+        guard let parsedURL = URL(string: cleaned),
+              let scheme = parsedURL.scheme?.lowercased() else {
+            // No valid scheme found, treat as plain text
+            return false
         }
-        // If there's no scheme (relative URL), allow it
-        return !trimmed.contains(":")
+        
+        // Check allowed schemes
+        switch scheme {
+        case "http", "https":
+            // For http/https, require a non-empty host
+            return parsedURL.host?.isEmpty == false
+        case "mailto":
+            return true
+        default:
+            return false
+        }
     }
 
     // MARK: - Block-level matchers

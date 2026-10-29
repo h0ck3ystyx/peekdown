@@ -53,6 +53,19 @@ let linkTests: [LinkTest] = [
     LinkTest(markdown: "[link](file:///etc/passwd)", shouldBeClickable: false, description: "file scheme"),
     LinkTest(markdown: "[link](data:text/html,bad)", shouldBeClickable: false, description: "data scheme"),
     LinkTest(markdown: "[link](JavaScript:alert(1))", shouldBeClickable: false, description: "JavaScript mixed case"),
+    
+    // Local file paths (should NOT be clickable)
+    LinkTest(markdown: "[link](/Applications/Calculator.app)", shouldBeClickable: false, description: "absolute path"),
+    LinkTest(markdown: "[link](~/Downloads/x.command)", shouldBeClickable: false, description: "tilde path"),
+    LinkTest(markdown: "[link](../../evil)", shouldBeClickable: false, description: "relative path"),
+    LinkTest(markdown: "[link](//host/path)", shouldBeClickable: false, description: "protocol-relative URL"),
+    
+    // Malformed URLs
+    LinkTest(markdown: "[link](https:)", shouldBeClickable: false, description: "https with no host"),
+    LinkTest(markdown: "[link](http://)", shouldBeClickable: false, description: "http with empty host"),
+    
+    // URLs with whitespace/control characters
+    LinkTest(markdown: "[link]( https://example.com )", shouldBeClickable: true, description: "URL with whitespace"),
 ]
 
 var passedLinkTests = 0
