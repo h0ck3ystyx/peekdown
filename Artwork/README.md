@@ -22,7 +22,7 @@ The setup window displays the bundle icon, matching Finder, Dock, and About.
 Packaging preserves the complete app, including the icon, in ZIP and PKG outputs.
 
 The landing page's animated mark is promotional artwork, not an app screenshot.
-Its native-icon claim refers to the next release, since v1.0.2 predates this icon.
+The native icon ships in v1.0.3; v1.0.2 predates this icon.
 
 Verification: inspect the small-size contact sheet and the built bundle, decode
 its ICNS with `iconutil`, and check the packaged payload before release. Finder

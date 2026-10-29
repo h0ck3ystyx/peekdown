@@ -18,10 +18,10 @@ Markdown is parsed to an `NSAttributedString` in Swift and drawn with AppKit. No
   - GFM task lists (`- [x]` / `- [ ]` → ☑ / ☐)
   - tables (box-drawn, width-capped and word-wrapped)
   - links, images (alt text), blockquotes, horizontal rules
-  - URL/email recognition with a Copy link fallback, numbered footnotes, and GitHub-style alerts (in current source; not in v1.0.2)
+  - URL/email recognition with a Copy link fallback, numbered footnotes, and GitHub-style alerts (available in v1.0.3)
   - YAML front-matter stripping
 - Light and dark mode (system label colors).
-- The host app declares the `net.daringfireball.markdown` UTI so Finder routes `.md` files to this extension.
+- The host app imports the `net.daringfireball.markdown` UTI so Finder routes `.md` files to this extension.
 
 See [native Markdown support](docs/markdown-support.md) for syntax examples and
 limitations, including the new autolinks, footnotes, and alert support. Quick Look

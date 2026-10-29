@@ -1,7 +1,7 @@
 # Native Markdown support
 
-This describes the current source implementation. The v1.0.2 download predates
-autolinks, footnotes, and alerts; these additions will ship in a future release.
+This describes the native renderer shipped in Peekdown v1.0.3, including
+autolinks, footnotes, and GitHub-style alerts.
 Peekdown uses native AppKit attributed text, not GitHub's HTML renderer. It
 supports a useful Markdown subset rather than claiming full CommonMark/GFM
 conformance or identical visual output. The website playground is a separate
