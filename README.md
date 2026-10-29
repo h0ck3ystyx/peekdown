@@ -14,7 +14,7 @@ Markdown is parsed to an `NSAttributedString` in Swift and drawn with AppKit. No
   - ATX and setext headings
   - bold, italic, strikethrough, inline code
   - fenced and indented code blocks
-  - language-aware fenced-code colors for Swift, shell, JSON, YAML, Python, JavaScript, and TypeScript (development source; not in v1.0.3)
+  - language-aware fenced-code colors for Swift, shell, JSON, YAML, Python, JavaScript, and TypeScript (available in v1.0.4)
   - ordered, unordered, and nested lists
   - GFM task lists (`- [x]` / `- [ ]` → ☑ / ☐)
   - tables (box-drawn, width-capped and word-wrapped)

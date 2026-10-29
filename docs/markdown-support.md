@@ -1,6 +1,6 @@
 # Native Markdown support
 
-This describes the native renderer shipped in Peekdown v1.0.3, including
+This describes the native renderer shipped in Peekdown v1.0.4, including
 autolinks, footnotes, and GitHub-style alerts.
 Peekdown uses native AppKit attributed text, not GitHub's HTML renderer. It
 supports a useful Markdown subset rather than claiming full CommonMark/GFM
@@ -93,9 +93,9 @@ reference numbering and styling, nested formatting, and callout colors in both
 appearances), plus malformed syntax and large documents. A combined sample is
 in [Tests/Fixtures/issue-1.md](../Tests/Fixtures/issue-1.md).
 
-## Fenced-code syntax highlighting (development source)
+## Fenced-code syntax highlighting (v1.0.4)
 
-The next release adds lightweight native lexical highlighting when a fenced code
+Peekdown v1.0.4 adds lightweight native lexical highlighting when a fenced code
 block has one of these language hints (case-insensitive; the first word is used):
 
 | Language | Fence hints |
@@ -126,7 +126,7 @@ plain monospaced text. Inline code is unchanged.
 Blocks above 65,536 UTF-16 units or exceeding 8,192 colored tokens stay plain.
 At most 262,144 UTF-16 units per document are considered for highlighting; later
 blocks remain plain when they do not fit the remaining budget. The complete text
-is still displayed. These additions are not in the v1.0.3 download.
+is still displayed. Syntax highlighting is available starting with v1.0.4.
 
 For visual acceptance, preview `Tests/Fixtures/syntax-highlighting.md` in Finder
 at several window sizes in Light and Dark appearance, checking long lines,
