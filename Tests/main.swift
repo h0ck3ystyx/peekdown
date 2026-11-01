@@ -385,3 +385,115 @@ for source in ["```mermaid\ngantt\n dateFormat YYYY\n```", "$$\n\\notARealMathCo
 let dollars = MarkdownRenderer.attributedString(from: "Costs $5 and $10. `$$literal$$`", settings: experiments)
 precondition(attachmentCount(dollars) == 0 && dollars.string.contains("$5"))
 print("Passed experimental preferences, native Mermaid/math in both appearances, source fallbacks, and static MDX")
+// MARK: - Standalone YAML
+
+YAMLCases.run()
+
+let yamlSample = "name: Peekdown\ncount: 2\nenabled: true\n# note\n"
+let yamlHighlighted = YAMLPreview.attributedString(from: yamlSample)
+precondition(yamlHighlighted.string == yamlSample)
+precondition((attribute(.font, at: "name", in: yamlHighlighted) as! NSFont).isFixedPitch)
+precondition(attribute(.peekdownCodeBlock, at: "name", in: yamlHighlighted) != nil)
+for appearanceName in [NSAppearance.Name.aqua, .darkAqua] {
+    NSAppearance(named: appearanceName)!.performAsCurrentDrawingAppearance {
+        let colored = YAMLPreview.attributedString(from: yamlSample)
+        func resolved(_ needle: String) -> NSColor {
+            (attribute(.foregroundColor, at: needle, in: colored) as! NSColor).usingColorSpace(.sRGB)!
+        }
+        precondition(resolved("name") == SyntaxHighlighter.color(for: .property).usingColorSpace(.sRGB)!)
+        precondition(resolved("2") == SyntaxHighlighter.color(for: .number).usingColorSpace(.sRGB)!)
+        precondition(resolved("true") == SyntaxHighlighter.color(for: .keyword).usingColorSpace(.sRGB)!)
+        precondition(resolved("# note") == SyntaxHighlighter.color(for: .comment).usingColorSpace(.sRGB)!)
+        precondition((attribute(.foregroundColor, at: "Peekdown", in: colored) as! NSColor) == .labelColor)
+    }
+}
+let invalidYAML = "key: \"unterminated\n"
+let plainYAML = YAMLPreview.attributedString(from: invalidYAML)
+precondition(plainYAML.string == invalidYAML)
+precondition((attribute(.foregroundColor, at: "key", in: plainYAML) as! NSColor) == .labelColor)
+let oversizedYAML = String(repeating: "a: 1\n", count: (SyntaxHighlighter.maxBlockLength / 4) + 8)
+precondition((oversizedYAML as NSString).length > SyntaxHighlighter.maxBlockLength)
+precondition(YAMLPreview.attributedString(from: oversizedYAML).string == oversizedYAML)
+precondition((attribute(.foregroundColor, at: "a", in: YAMLPreview.attributedString(from: oversizedYAML)) as! NSColor) == .labelColor)
+let crowdedYAML = String(repeating: "a: 1\n", count: (SyntaxHighlighter.maxTokens / 2) + 4)
+precondition((crowdedYAML as NSString).length <= SyntaxHighlighter.maxBlockLength)
+precondition(YAMLValidator.isValid(crowdedYAML))
+precondition((attribute(.foregroundColor, at: "a", in: YAMLPreview.attributedString(from: crowdedYAML)) as! NSColor) == .labelColor)
+precondition((attribute(.foregroundColor, at: "name", in: YAMLPreview.attributedString(from: yamlSample, forcePlain: true)) as! NSColor) == .labelColor)
+let fixtureYAML = try String(contentsOfFile: "Tests/Fixtures/sample.yaml", encoding: .utf8)
+precondition(YAMLValidator.isValid(fixtureYAML))
+precondition(YAMLPreview.attributedString(from: fixtureYAML).string == fixtureYAML)
+
+let yamlRoot = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+    .appendingPathComponent("peekdown-yaml-\(UUID().uuidString)", isDirectory: true)
+try FileManager.default.createDirectory(at: yamlRoot, withIntermediateDirectories: true)
+defer { try? FileManager.default.removeItem(at: yamlRoot) }
+func writeYAML(_ name: String, _ contents: String) -> URL {
+    let url = yamlRoot.appendingPathComponent(name)
+    try! contents.write(to: url, atomically: true, encoding: .utf8)
+    return url
+}
+let yamlPreview = PreviewViewController()
+yamlPreview.loadView()
+func previewText(_ url: URL) -> NSAttributedString {
+    var failure: Error?
+    yamlPreview.preparePreviewOfFile(at: url) { failure = $0 }
+    precondition(failure == nil, "YAML preview failed for \(url.lastPathComponent)")
+    let scroll = (yamlPreview.view as! NSStackView).arrangedSubviews.first as! NSScrollView
+    return (scroll.documentView as! NSTextView).textStorage!
+}
+precondition(previewText(writeYAML("config.yaml", yamlSample)).string == yamlSample)
+precondition(previewText(writeYAML("config.yml", yamlSample)).string == yamlSample)
+precondition(previewText(writeYAML("NOTES.YAML", yamlSample)).string == yamlSample)
+let invalidPreview = previewText(writeYAML("broken.yaml", invalidYAML))
+precondition(invalidPreview.string == invalidYAML)
+precondition((attribute(.foregroundColor, at: "key", in: invalidPreview) as! NSColor) == .labelColor)
+precondition(PreviewDocumentKind.kind(for: URL(fileURLWithPath: "/tmp/notes.md")) == .markdown)
+precondition(PreviewDocumentKind.kind(for: URL(fileURLWithPath: "/tmp/config.YML")) == .yaml)
+precondition(PreviewDocumentKind.kind(for: URL(fileURLWithPath: "/tmp/notes.txt")) == nil)
+var missingYAML = false
+yamlPreview.preparePreviewOfFile(at: yamlRoot.appendingPathComponent("missing.yaml")) { missingYAML = $0 != nil }
+precondition(missingYAML, "A missing YAML file must not preview as an empty success")
+try Data("abcdef".utf8).write(to: yamlRoot.appendingPathComponent("short.yaml"))
+let yamlPrefix = PreviewFileReader.read(url: yamlRoot.appendingPathComponent("short.yaml"), maxBytes: 3)
+precondition(yamlPrefix?.text == "abc" && yamlPrefix?.isUTF8 == true)
+let splitUTF8 = PreviewFileReader.decode(Data([0x61, 0xF0, 0x9F, 0x98]), repairTruncatedTail: true)
+precondition(splitUTF8.isUTF8 && splitUTF8.text == "a")
+let latin = PreviewFileReader.decode(Data([0x61, 0xFF, 0x62]))
+precondition(!latin.isUTF8 && !latin.text.isEmpty)
+print("Passed YAML structure, highlighting, plain-text fallbacks, and preview routing")
+
+// Integration regressions: preserve preferences and MDX alongside YAML.
+var yamlSettings = PreviewSettings.defaults
+yamlSettings.textScale = 1.5
+yamlSettings.codeLineSpacing = 5
+let styledYAML = YAMLPreview.attributedString(from: "name: Peekdown", settings: yamlSettings)
+precondition((attribute(.font, at: "name", in: styledYAML) as! NSFont).pointSize == 20)
+precondition((attribute(.paragraphStyle, at: "name", in: styledYAML) as! NSParagraphStyle).lineSpacing == 5)
+let styledFence = MarkdownRenderer.attributedString(from: "```yaml\nname: Peekdown\n```", settings: yamlSettings)
+precondition((attribute(.paragraphStyle, at: "name", in: styledFence) as! NSParagraphStyle).lineSpacing == 5)
+let nestedYAML = String(repeating: "[", count: 200) + "0" + String(repeating: "]", count: 200)
+precondition(!YAMLValidator.isValid(nestedYAML))
+precondition(YAMLPreview.attributedString(from: nestedYAML).string == nestedYAML)
+precondition(PreviewDocumentKind.kind(for: URL(fileURLWithPath: "/tmp/notes.mdx")) == .mdx)
+precondition(PreviewFileReader.read(url: yamlRoot.appendingPathComponent("missing.yaml"), maxBytes: nil) == nil)
+precondition(previewText(writeYAML("notes.mdx", "# Heading\n\n<Card />")).string.contains("Static MDX preview"))
+print("Passed YAML integration: shared appearance, bounded nesting, read errors, and MDX routing")
+
+// Security regressions: adversarial keys and reads that exceed their byte budget.
+let wideKey = "a" + String(repeating: " ", count: 60_000) + "b: 1\n"
+let wideStart = Date()
+precondition(YAMLValidator.isValid(wideKey))
+precondition(Date().timeIntervalSince(wideStart) < 2, "Whitespace key parsing must stay linear")
+let readURL = writeYAML("bounded.yaml", "abcd")
+precondition(PreviewFileReader.read(url: readURL, maxBytes: 4)?.isTruncated == false)
+let overRead = PreviewFileReader.read(url: readURL, maxBytes: 3)!
+precondition(overRead.isTruncated && overRead.text == "abc")
+try Data(repeating: 97, count: RenderingConstants.maxFileSize + 1).write(to: readURL)
+let cappedRead = PreviewFileReader.read(url: readURL, maxBytes: nil)!
+precondition(cappedRead.isTruncated && cappedRead.text.utf8.count == SyntaxHighlighter.maxDocumentLength)
+precondition(previewText(readURL).string.contains("Preview truncated"))
+let largeMarkdown = yamlRoot.appendingPathComponent("large.md")
+try FileManager.default.copyItem(at: readURL, to: largeMarkdown)
+precondition(previewText(largeMarkdown).string.contains("File Too Large"))
+print("Passed security regressions: long keys, exact/overflow byte limits, and large-file routing")

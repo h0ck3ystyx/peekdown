@@ -33,6 +33,7 @@
                 <string>net.daringfireball.markdown</string>
                 <string>public.markdown</string>
                 <string>com.markdownpreview.mdx</string>
+                <string>public.yaml</string>
             </array>
             <key>QLSupportsSearchableItems</key>
             <false/>

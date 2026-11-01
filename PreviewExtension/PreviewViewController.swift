@@ -4,8 +4,8 @@ import os
 
 private let linkLog = Logger(subsystem: "com.markdownpreview.app.preview", category: "links")
 
-/// View-based Quick Look preview: renders Markdown to NSAttributedString and
-/// shows it in an NSTextView without WebKit or JavaScript.
+/// View-based Quick Look preview: renders Markdown or YAML to NSAttributedString
+/// and shows it in an NSTextView without WebKit or JavaScript.
 final class PreviewViewController: NSViewController, QLPreviewingController, NSTextViewDelegate {
 
     private let textView: NSTextView = {
@@ -124,41 +124,112 @@ final class PreviewViewController: NSViewController, QLPreviewingController, NST
         linkBanner.isHidden = true
         failedLink = nil
         // Reject unexpected requests rather than reporting an empty successful preview.
-        let ext = url.pathExtension.lowercased()
-        guard ["md", "markdown", "mdown", "mkd", "mkdn", "mdx"].contains(ext) else {
+        guard let kind = PreviewDocumentKind.kind(for: url) else {
             handler(NSError(domain: NSCocoaErrorDomain, code: NSFileReadUnknownError,
                             userInfo: [NSLocalizedDescriptionKey: "Unsupported file type"]))
             return
         }
-        
-        // Check file size before reading
-        guard let fileSize = (try? FileManager.default.attributesOfItem(atPath: url.path))?[.size] as? Int,
-              fileSize <= RenderingConstants.maxFileSize else {
-            let fallback = """
-                File Too Large
-                
-                This Markdown file exceeds the \(RenderingConstants.maxFileSize / 1024 / 1024) MB preview limit.
-                Please open it in a text editor.
-                """
-            let attrs: [NSAttributedString.Key: Any] = [
-                .font: NSFont.systemFont(ofSize: 14),
-                .foregroundColor: NSColor.secondaryLabelColor
-            ]
-            textView.textStorage?.setAttributedString(NSAttributedString(string: fallback, attributes: attrs))
+
+        let settings = PreviewSettings.load()
+        // A single bounded read enforces the limit even if the file changes.
+        guard let loaded = PreviewFileReader.read(url: url, maxBytes: nil) else {
+            handler(NSError(domain: NSCocoaErrorDomain, code: NSFileReadUnknownError))
+            return
+        }
+        if kind != .yaml {
+            guard !loaded.isTruncated else {
+                let fallback = """
+                    File Too Large
+
+                    This Markdown file exceeds the \(RenderingConstants.maxFileSize / 1024 / 1024) MB preview limit.
+                    Please open it in a text editor.
+                    """
+                let attrs: [NSAttributedString.Key: Any] = [
+                    .font: NSFont.systemFont(ofSize: 14),
+                    .foregroundColor: NSColor.secondaryLabelColor
+                ]
+                textView.textStorage?.setAttributedString(NSAttributedString(string: fallback, attributes: attrs))
+                handler(nil)
+                return
+            }
+            let raw = kind == .mdx ? StaticMDX.markdownView(of: loaded.text) : loaded.text
+            textView.textStorage?.setAttributedString(MarkdownRenderer.attributedString(from: raw, settings: settings))
             handler(nil)
             return
         }
-        
-        let raw: String
-        if let s = try? String(contentsOf: url, encoding: .utf8) {
-            raw = s
-        } else {
-            raw = (try? String(contentsOf: url, encoding: .isoLatin1)) ?? ""
-        }
 
-        let attributed = MarkdownRenderer.attributedString(from: ext == "mdx" ? StaticMDX.markdownView(of: raw) : raw, settings: PreviewSettings.load())
-        textView.textStorage?.setAttributedString(attributed)
+        if loaded.isTruncated {
+            let prefix = loaded.text
+            let note = "\n\n— Preview truncated. This YAML file exceeds the \(RenderingConstants.maxFileSize / 1024 / 1024) MB limit and is shown as plain text. —\n"
+            textView.textStorage?.setAttributedString(YAMLPreview.attributedString(from: prefix + note, forcePlain: true, settings: settings))
+            handler(nil)
+            return
+        }
+        let raw = loaded.text
+        textView.textStorage?.setAttributedString(
+            YAMLPreview.attributedString(from: raw, forcePlain: !loaded.isUTF8, settings: settings)
+        )
         handler(nil)
+    }
+}
+
+enum PreviewDocumentKind {
+    case markdown
+    case mdx
+    case yaml
+
+    static func kind(for url: URL) -> PreviewDocumentKind? {
+        switch url.pathExtension.lowercased() {
+        case "md", "markdown", "mdown", "mkd", "mkdn":
+            return .markdown
+        case "mdx":
+            return .mdx
+        case "yaml", "yml":
+            return .yaml
+        default:
+            return nil
+        }
+    }
+}
+
+enum PreviewFileReader {
+    struct Text {
+        var text: String
+        var isUTF8: Bool
+        var isTruncated = false
+    }
+
+    static func read(url: URL, maxBytes: Int?) -> Text? {
+        let limit = maxBytes ?? RenderingConstants.maxFileSize
+        guard limit >= 0, limit < Int.max,
+              let handle = try? FileHandle(forReadingFrom: url) else { return nil }
+        defer { try? handle.close() }
+        // Read one overflow byte from the same descriptor; never reopen by path.
+        guard let data = try? handle.read(upToCount: limit + 1) else { return nil }
+        let truncated = data.count > limit
+        let retained = truncated ? min(limit, SyntaxHighlighter.maxDocumentLength) : data.count
+        var result = decode(Data(data.prefix(retained)), repairTruncatedTail: truncated)
+        result.isTruncated = truncated
+        return result
+    }
+
+    static func decode(_ data: Data, repairTruncatedTail: Bool = false) -> Text {
+        if let text = String(data: data, encoding: .utf8) {
+            return Text(text: text, isUTF8: true)
+        }
+        // A bounded read can split a code unit. Drop that incomplete tail, and
+        // only then, before treating the bytes as a non-UTF-8 encoding.
+        if repairTruncatedTail {
+            var trimmed = data
+            let floor = max(0, data.count - 3)
+            while trimmed.count > floor && String(data: trimmed, encoding: .utf8) == nil {
+                trimmed.removeLast()
+            }
+            if trimmed.count < data.count, let text = String(data: trimmed, encoding: .utf8) {
+                return Text(text: text, isUTF8: true)
+            }
+        }
+        return Text(text: String(data: data, encoding: .isoLatin1) ?? "", isUTF8: false)
     }
 }
 

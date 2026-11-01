@@ -1,0 +1,10 @@
+# Peekdown YAML preview sample
+name: Peekdown
+enabled: true
+count: 2
+preview:
+  extensions:
+    - yaml
+    - yml
+note: "quotes, # not a comment"
+website: https://example.com/peekdown

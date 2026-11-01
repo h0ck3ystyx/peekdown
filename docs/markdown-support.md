@@ -1,7 +1,8 @@
 # Native Markdown support
 
-This describes the native renderer shipped in Peekdown v1.0.4, including
-autolinks, footnotes, and GitHub-style alerts.
+The Markdown basics and fenced-code highlighting described here ship in
+Peekdown v1.0.4. Appearance settings, native Mermaid/math, static MDX, and
+standalone YAML are development features for the next release.
 Peekdown uses native AppKit attributed text, not GitHub's HTML renderer. It
 supports a useful Markdown subset rather than claiming full CommonMark/GFM
 conformance or identical visual output. The website playground is a separate
@@ -121,7 +122,8 @@ interpolation, JavaScript regex literals, shell heredocs, YAML block scalars, an
 Swift raw strings are not fully parsed; complex syntax may receive approximate
 colors. No embedded code runs, and no grammar or other resource is downloaded.
 Unlabelled fences, unknown languages (including JSX/TSX), and indented blocks stay
-plain monospaced text. Inline code is unchanged.
+plain monospaced text. Inline code is unchanged. Standalone `.yaml` and `.yml`
+files use this same YAML lexer; see [YAML previews](yaml-support.md).
 
 Blocks above 65,536 UTF-16 units or exceeding 8,192 colored tokens stay plain.
 At most 262,144 UTF-16 units per document are considered for highlighting; later
@@ -131,3 +133,14 @@ is still displayed. Syntax highlighting is available starting with v1.0.4.
 For visual acceptance, preview `Tests/Fixtures/syntax-highlighting.md` in Finder
 at several window sizes in Light and Dark appearance, checking long lines,
 comments/strings, Unicode, and the plain-code fallbacks.
+
+## Appearance, Mermaid, math, and static MDX (next release)
+
+Open Peekdown to set text size, compact paragraph spacing, and code line spacing.
+Settings take effect when a preview reopens. Mermaid and display equations have
+separate experimental switches, both off by default. Static `.mdx` previews show
+components and expressions as source without executing JavaScript.
+
+See [experimental previews](experimental-preview.md) for syntax examples,
+resource limits, and current limitations, and [YAML previews](yaml-support.md)
+for standalone configuration files. These features are not included in v1.0.4.

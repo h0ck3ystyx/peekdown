@@ -5,7 +5,7 @@ import CoreServices
 let app = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
 let fixture = URL(fileURLWithPath: CommandLine.arguments[2])
 let workspace = NSWorkspace.shared
-let fixtures = ["md", "markdown", "mdown", "mkd", "mkdn"].map {
+let fixtures = ["md", "markdown", "mdown", "mkd", "mkdn", "mdx", "yaml", "yml"].map {
     fixture.deletingPathExtension().appendingPathExtension($0)
 }
 for file in fixtures { try "# Association test\n".write(to: file, atomically: true, encoding: .utf8) }
@@ -27,6 +27,6 @@ guard unregister.terminationStatus == 0 else { fatalError("Unregistration failed
 let after = handler()
 print("After removal:       \(after)")
 guard before == registered && before == after else {
-    fatalError("Markdown default handler changed")
+    fatalError("Default handler changed for a Markdown or YAML extension")
 }
-print("Passed registration/removal preservation of the current Markdown handler")
+print("Passed registration/removal preservation of the current Markdown and YAML handlers")
