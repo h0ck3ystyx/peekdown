@@ -125,7 +125,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController, NST
         failedLink = nil
         // Reject unexpected requests rather than reporting an empty successful preview.
         let ext = url.pathExtension.lowercased()
-        guard ["md", "markdown", "mdown", "mkd", "mkdn"].contains(ext) else {
+        guard ["md", "markdown", "mdown", "mkd", "mkdn", "mdx"].contains(ext) else {
             handler(NSError(domain: NSCocoaErrorDomain, code: NSFileReadUnknownError,
                             userInfo: [NSLocalizedDescriptionKey: "Unsupported file type"]))
             return
@@ -156,7 +156,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController, NST
             raw = (try? String(contentsOf: url, encoding: .isoLatin1)) ?? ""
         }
 
-        let attributed = MarkdownRenderer.attributedString(from: raw)
+        let attributed = MarkdownRenderer.attributedString(from: ext == "mdx" ? StaticMDX.markdownView(of: raw) : raw, settings: PreviewSettings.load())
         textView.textStorage?.setAttributedString(attributed)
         handler(nil)
     }

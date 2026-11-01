@@ -73,6 +73,19 @@
                 <string>text/markdown</string>
             </dict>
         </dict>
+        <dict>
+            <key>UTTypeIdentifier</key>
+            <string>com.markdownpreview.mdx</string>
+            <key>UTTypeDescription</key>
+            <string>MDX document</string>
+            <key>UTTypeConformsTo</key>
+            <array><string>public.plain-text</string></array>
+            <key>UTTypeTagSpecification</key>
+            <dict>
+                <key>public.filename-extension</key>
+                <array><string>mdx</string></array>
+            </dict>
+        </dict>
     </array>
 </dict>
 </plist>

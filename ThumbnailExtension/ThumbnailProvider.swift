@@ -10,7 +10,7 @@ final class ThumbnailProvider: QLThumbnailProvider {
         let size = request.maximumSize
 
         let ext = url.pathExtension.lowercased()
-        guard ["md", "markdown", "mdown", "mkd", "mkdn"].contains(ext) else {
+        guard ["md", "markdown", "mdown", "mkd", "mkdn", "mdx"].contains(ext) else {
             handler(nil, nil)
             return
         }

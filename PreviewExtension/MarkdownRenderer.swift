@@ -1,16 +1,20 @@
 import AppKit
+import PeekdownNativeSupport
 
 /// Renders Markdown to an NSAttributedString using only AppKit — no WebKit,
 /// no JavaScript, no HTML importer. Rendering stays inside the extension sandbox.
 enum MarkdownRenderer {
-    static func attributedString(from source: String, fontSize: CGFloat = 14) -> NSAttributedString {
-        RenderingSession().attributedString(from: source, fontSize: fontSize)
+    static func attributedString(from source: String, fontSize: CGFloat = 14, settings: PreviewSettings = .defaults) -> NSAttributedString {
+        RenderingSession(settings: settings).attributedString(from: source, fontSize: fontSize * settings.textScale)
     }
 }
 
 // Reference state belongs to one document, including recursive inline/block rendering.
 // Never share mutable footnote numbering between simultaneous Quick Look requests.
 private final class RenderingSession {
+    private let settings: PreviewSettings
+    private var renderedImages = 0
+    init(settings: PreviewSettings) { self.settings = settings }
     private var codeBlockNumber = 0
     private var highlightBudget = SyntaxHighlighter.maxDocumentLength
     private var definitions: [String: [String]] = [:]
@@ -91,8 +95,28 @@ private final class RenderingSession {
                     code.append(lines[i]); i += 1
                 }
                 i += 1 // skip closing fence
-                out.append(codeBlock(code.joined(separator: "\n"), fontSize: fontSize, hint: hint))
+                let body = code.joined(separator: "\n")
+                if settings.diagrams, hint.trimmingCharacters(in: .whitespaces).lowercased() == "mermaid",
+                   let diagram = renderedBlock(body, math: false, fontSize: fontSize) {
+                    out.append(diagram)
+                } else {
+                    out.append(codeBlock(body, fontSize: fontSize, hint: hint))
+                }
                 continue
+            }
+
+            // Experimental display math only; prices and inline dollars stay literal.
+            if settings.equations, t == "$$" || t == "\\[" {
+                let closing = t == "$$" ? "$$" : "\\]"
+                var end = i+1
+                while end < lines.count, end-i <= 32, lines[end].trimmingCharacters(in: .whitespaces) != closing { end += 1 }
+                if end < lines.count, end-i <= 32, lines[end].trimmingCharacters(in: .whitespaces) == closing {
+                    let body = lines[(i+1)..<end].joined(separator: "\n")
+                    if let equation = renderedBlock(body, math: true, fontSize: fontSize) { out.append(equation) }
+                    else { out.append(codeBlock(lines[i...end].joined(separator: "\n"), fontSize: fontSize)) }
+                    i = end+1
+                    continue
+                }
             }
 
             // Horizontal rule
@@ -134,6 +158,7 @@ private final class RenderingSession {
                 let l = lines[i]
                 let lt = l.trimmingCharacters(in: .whitespaces)
                 if lt.isEmpty { break }
+                if settings.equations, !para.isEmpty, lt == "$$" || lt == "\\[" { break }
                 if atxHeading(lt) != nil { break }
                 if fenceMarker(lt) != nil { break }
                 if isListMarker(l) { break }
@@ -386,9 +411,26 @@ private final class RenderingSession {
 
     // MARK: - Block renderers
 
+    private func renderedBlock(_ source: String, math: Bool, fontSize: CGFloat) -> NSAttributedString? {
+        guard renderedImages < 4 else { return nil }
+        renderedImages += 1
+        let dark = NSAppearance.currentDrawing().bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        let image = math ? NativePreviewRenderer.math(source, size: fontSize*1.4, dark: dark)
+                         : NativePreviewRenderer.diagram(source, dark: dark)
+        guard let image = image else { return nil }
+        let attachment = PreviewImageAttachment()
+        attachment.image = image
+        let result = NSMutableAttributedString(attachment: attachment)
+        let paragraph = spacingStyle(before: 8, after: 12).mutableCopy() as! NSMutableParagraphStyle
+        paragraph.alignment = .center
+        result.addAttributes([.paragraphStyle: paragraph, .toolTip: source], range: NSRange(location: 0, length: result.length))
+        result.append(NSAttributedString(string: "\n", attributes: [.paragraphStyle: paragraph]))
+        return result
+    }
+
     private func heading(_ level: Int, text: String, fontSize: CGFloat) -> NSAttributedString {
         let sizes: [CGFloat] = [0, 30, 24, 19, 16, 14, 12]
-        let size = level <= 6 ? sizes[level] : fontSize
+        let size = level <= 6 ? sizes[level] * fontSize / 14 : fontSize
         let attrs: [NSAttributedString.Key: Any] = [
             .font: NSFont.systemFont(ofSize: size, weight: .bold),
             .foregroundColor: NSColor.labelColor,
@@ -404,7 +446,7 @@ private final class RenderingSession {
         let attrs: [NSAttributedString.Key: Any] = [
             .font: NSFont.systemFont(ofSize: fontSize),
             .foregroundColor: NSColor.labelColor,
-            .paragraphStyle: spacingStyle(before: 0, after: 8)
+            .paragraphStyle: spacingStyle(before: 0, after: settings.compact ? 4 : 8)
         ]
         let out = NSMutableAttributedString()
         out.append(renderInline(text, attrs))
@@ -415,7 +457,7 @@ private final class RenderingSession {
     private func codeBlock(_ code: String, fontSize: CGFloat, hint: String = "") -> NSAttributedString {
         let ps = NSMutableParagraphStyle()
         ps.paragraphSpacing = 0
-        ps.lineSpacing = 2
+        ps.lineSpacing = settings.codeLineSpacing
         ps.headIndent = 12
         ps.firstLineHeadIndent = 12
         ps.tailIndent = -12

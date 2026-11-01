@@ -16,11 +16,18 @@ settings:
     MARKETING_VERSION: "1.0.4"
     CURRENT_PROJECT_VERSION: "14"
 
+packages:
+  NativeSupport:
+    path: .
+
 targets:
   Peekdown:
     type: application
     platform: macOS
     sources:
+      - path: Shared
+      - path: ThirdParty
+        buildPhase: resources
       - path: LICENSE
         buildPhase: resources
       - path: Peekdown/Resources
@@ -51,9 +58,15 @@ targets:
             UTTypeTagSpecification:
               public.filename-extension: [md, markdown, mdown, mkd, mkdn]
               public.mime-type: text/markdown
+          - UTTypeIdentifier: com.markdownpreview.mdx
+            UTTypeDescription: MDX document
+            UTTypeConformsTo: [public.plain-text]
+            UTTypeTagSpecification:
+              public.filename-extension: [mdx]
     entitlements:
       path: Peekdown/Peekdown.entitlements
       properties:
+        com.apple.security.application-groups: [7ZH96S5LF4.com.markdownpreview.shared]
         com.apple.security.app-sandbox: true
         com.apple.security.files.user-selected.read-only: true
     dependencies:
@@ -87,15 +100,19 @@ targets:
         NSExtension:
           NSExtensionAttributes:
             QLIsDataBasedPreview: false
-            QLSupportedContentTypes: [net.daringfireball.markdown, public.markdown]
+            QLSupportedContentTypes: [net.daringfireball.markdown, public.markdown, com.markdownpreview.mdx]
             QLSupportsSearchableItems: false
           NSExtensionPointIdentifier: com.apple.quicklook.preview
           NSExtensionPrincipalClass: "$(PRODUCT_MODULE_NAME).PreviewViewController"
     entitlements:
       path: PreviewExtension/PreviewExtension.entitlements
       properties:
+        com.apple.security.application-groups: [7ZH96S5LF4.com.markdownpreview.shared]
         com.apple.security.app-sandbox: true
         com.apple.security.files.user-selected.read-only: true
+    dependencies:
+      - package: NativeSupport
+        product: PeekdownNativeSupport
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.markdownpreview.app.preview
@@ -120,7 +137,7 @@ targets:
         LSMinimumSystemVersion: "$(MACOSX_DEPLOYMENT_TARGET)"
         NSExtension:
           NSExtensionAttributes:
-            QLSupportedContentTypes: [net.daringfireball.markdown, public.markdown]
+            QLSupportedContentTypes: [net.daringfireball.markdown, public.markdown, com.markdownpreview.mdx]
             QLThumbnailMinimumDimension: 0
           NSExtensionPointIdentifier: com.apple.quicklook.thumbnail
           NSExtensionPrincipalClass: "$(PRODUCT_MODULE_NAME).ThumbnailProvider"
