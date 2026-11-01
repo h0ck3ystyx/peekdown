@@ -2,7 +2,7 @@
 
 The Markdown basics and fenced-code highlighting described here ship in
 Peekdown v1.0.4. Appearance settings, native Mermaid/math, static MDX, and
-standalone YAML are development features for the next release.
+standalone YAML are available in v1.1.0.
 Peekdown uses native AppKit attributed text, not GitHub's HTML renderer. It
 supports a useful Markdown subset rather than claiming full CommonMark/GFM
 conformance or identical visual output. The website playground is a separate
@@ -134,7 +134,7 @@ For visual acceptance, preview `Tests/Fixtures/syntax-highlighting.md` in Finder
 at several window sizes in Light and Dark appearance, checking long lines,
 comments/strings, Unicode, and the plain-code fallbacks.
 
-## Appearance, Mermaid, math, and static MDX (next release)
+## Appearance, Mermaid, math, and static MDX (v1.1.0)
 
 Open Peekdown to set text size, compact paragraph spacing, and code line spacing.
 Settings take effect when a preview reopens. Mermaid and display equations have
@@ -143,4 +143,4 @@ components and expressions as source without executing JavaScript.
 
 See [experimental previews](experimental-preview.md) for syntax examples,
 resource limits, and current limitations, and [YAML previews](yaml-support.md)
-for standalone configuration files. These features are not included in v1.0.4.
+for standalone configuration files. These features require v1.1.0 or later.

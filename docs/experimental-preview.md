@@ -1,8 +1,7 @@
 # Experimental native previews
 
-Development source includes appearance preferences, Mermaid, display math, and
-static MDX for the next release. Published v1.0.4 downloads do not include these
-features yet. Open Peekdown to adjust text size (80–160%), paragraph density,
+Peekdown v1.1.0 includes appearance preferences and experimental Mermaid, display
+math, and static MDX previews. Open Peekdown to adjust text size (80–160%), paragraph density,
 and code spacing (0–6 points). Enable the two experimental switches for diagrams
 and equations, then close and reopen Quick Look. Both switches default to off.
 

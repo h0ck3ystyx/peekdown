@@ -8,20 +8,18 @@ Markdown is parsed to an `NSAttributedString` in Swift and drawn with AppKit. No
 
 ## Release status
 
-The published installer, ZIP, and Homebrew cask currently provide **v1.0.4**.
-The appearance settings, experimental Mermaid/math, static MDX, and standalone
-YAML described below are in the development source for the next release; they
-are not included in those downloads yet. YAML is being integrated in
-[PR #24](https://github.com/h0ck3ystyx/peekdown/pull/24).
+**v1.1.0** includes standalone YAML, appearance settings, static MDX, and
+experimental native Mermaid/math. Diagram and equation rendering are off by
+default; enable them in Peekdown. See the support docs for supported syntax.
 
 ## Features
 
 - **Quick Look preview** — select a `.md` file and press Space for a rendered document.
-- **YAML preview (next release)** — select a `.yaml` or `.yml` file and press Space for a syntax-colored code panel. Oversized or invalid YAML stays plain monospaced text. See [YAML previews](docs/yaml-support.md).
-- **Appearance preferences (next release)** — open Peekdown to adjust text size (80–160%), compact paragraph spacing, and code line spacing. Reopen Quick Look to apply changes.
-- **Experimental Mermaid (next release, off by default)** — native flowcharts and sequence diagrams in `mermaid` fences. Unsupported input remains source.
-- **Experimental display math (next release, off by default)** — native equations between standalone `$$` or `\[` / `\]` delimiter lines. Inline math is not enabled.
-- **Static MDX (next release)** — `.mdx` previews render ordinary Markdown; imports, JSX, and expressions remain literal source and never execute. This is not full MDX component rendering.
+- **YAML preview** — select a `.yaml` or `.yml` file and press Space for a syntax-colored code panel. Oversized or invalid YAML stays plain monospaced text. See [YAML previews](docs/yaml-support.md).
+- **Appearance preferences** — open Peekdown to adjust text size (80–160%), compact paragraph spacing, and code line spacing. Reopen Quick Look to apply changes.
+- **Experimental Mermaid (experimental, off by default)** — native flowcharts and sequence diagrams in `mermaid` fences. Unsupported input remains source.
+- **Experimental display math (experimental, off by default)** — native equations between standalone `$$` or `\[` / `\]` delimiter lines. Inline math is not enabled.
+- **Static MDX** — `.mdx` previews render ordinary Markdown; imports, JSX, and expressions remain literal source and never execute. This is not full MDX component rendering.
 - **Finder thumbnails** — a styled card with the first heading and a text snippet for Markdown files.
 - Renders CommonMark-ish Markdown natively:
   - ATX and setext headings
@@ -60,7 +58,7 @@ Download the latest release from the [releases page](https://github.com/h0ck3yst
 - **ZIP archive**: Download `Peekdown-VERSION.zip`, extract, and move `Peekdown.app` to `~/Applications`
 
 After installation, launch `Peekdown.app` once, then select a Markdown file in Finder
-and press **Space**. Development builds also accept `.yaml`, `.yml`, and `.mdx`.
+and press **Space**. Version 1.1.0 also accepts `.yaml`, `.yml`, and `.mdx`.
 
 ## Distribution releases
 
