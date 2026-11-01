@@ -413,33 +413,8 @@ private final class RenderingSession {
     }
 
     private func codeBlock(_ code: String, fontSize: CGFloat, hint: String = "") -> NSAttributedString {
-        let ps = NSMutableParagraphStyle()
-        ps.paragraphSpacing = 0
-        ps.lineSpacing = 2
-        ps.headIndent = 12
-        ps.firstLineHeadIndent = 12
-        ps.tailIndent = -12
-        let attrs: [NSAttributedString.Key: Any] = [
-            .font: NSFont.monospacedSystemFont(ofSize: fontSize - 1, weight: .regular),
-            .foregroundColor: NSColor.labelColor,
-            .paragraphStyle: ps
-        ]
-        let out = NSMutableAttributedString(string: code + "\n", attributes: attrs)
         codeBlockNumber += 1
-        out.addAttributes([.peekdownCodeBlock: codeBlockNumber, .peekdownCodeBackground: codeBackground],
-                          range: NSRange(location: 0, length: out.length))
-        let text = out.string as NSString
-        let first = text.paragraphRange(for: NSRange(location: 0, length: 0))
-        let last = text.paragraphRange(for: NSRange(location: max(0, out.length-1), length: 0))
-        let firstStyle = ps.mutableCopy() as! NSMutableParagraphStyle
-        firstStyle.paragraphSpacingBefore = 12
-        if first == last { firstStyle.paragraphSpacing = 12 }
-        out.addAttribute(.paragraphStyle, value: firstStyle, range: first)
-        if first != last {
-            let lastStyle = ps.mutableCopy() as! NSMutableParagraphStyle
-            lastStyle.paragraphSpacing = 12
-            out.addAttribute(.paragraphStyle, value: lastStyle, range: last)
-        }
+        let out = CodeBlockStyle.panelString(code + "\n", fontSize: fontSize, blockID: codeBlockNumber)
         let length = (code as NSString).length
         if length <= SyntaxHighlighter.maxBlockLength, length <= highlightBudget,
            let language = SyntaxHighlighter.Language(hint: hint) {
@@ -886,11 +861,6 @@ private final class RenderingSession {
     private lazy var codeAttrs: [NSAttributedString.Key: Any] = [
         .font: NSFont.monospacedSystemFont(ofSize: 12.5, weight: .regular),
         .foregroundColor: NSColor.labelColor,
-        .backgroundColor: codeBackground
+        .backgroundColor: CodeBlockStyle.background
     ]
-
-    private let codeBackground: NSColor = NSColor(name: nil) { appearance in
-        let dark = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-        return dark ? NSColor(calibratedWhite: 0.20, alpha: 1) : NSColor(calibratedWhite: 0.93, alpha: 1)
-    }
 }

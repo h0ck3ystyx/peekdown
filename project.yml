@@ -44,6 +44,11 @@ targets:
             LSHandlerRank: None
             CFBundleTypeExtensions: [md, markdown, mdown, mkd, mkdn]
             LSItemContentTypes: [net.daringfireball.markdown, public.markdown]
+          - CFBundleTypeName: YAML Document
+            CFBundleTypeRole: None
+            LSHandlerRank: None
+            CFBundleTypeExtensions: [yaml, yml]
+            LSItemContentTypes: [public.yaml]
         UTImportedTypeDeclarations:
           - UTTypeIdentifier: net.daringfireball.markdown
             UTTypeDescription: Markdown
@@ -87,7 +92,7 @@ targets:
         NSExtension:
           NSExtensionAttributes:
             QLIsDataBasedPreview: false
-            QLSupportedContentTypes: [net.daringfireball.markdown, public.markdown]
+            QLSupportedContentTypes: [net.daringfireball.markdown, public.markdown, public.yaml]
             QLSupportsSearchableItems: false
           NSExtensionPointIdentifier: com.apple.quicklook.preview
           NSExtensionPrincipalClass: "$(PRODUCT_MODULE_NAME).PreviewViewController"

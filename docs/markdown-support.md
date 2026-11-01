@@ -121,7 +121,8 @@ interpolation, JavaScript regex literals, shell heredocs, YAML block scalars, an
 Swift raw strings are not fully parsed; complex syntax may receive approximate
 colors. No embedded code runs, and no grammar or other resource is downloaded.
 Unlabelled fences, unknown languages (including JSX/TSX), and indented blocks stay
-plain monospaced text. Inline code is unchanged.
+plain monospaced text. Inline code is unchanged. Standalone `.yaml` and `.yml`
+files use this same YAML lexer; see [YAML previews](yaml-support.md).
 
 Blocks above 65,536 UTF-16 units or exceeding 8,192 colored tokens stay plain.
 At most 262,144 UTF-16 units per document are considered for highlighting; later

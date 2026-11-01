@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><title>Peekdown — Quick Look for Markdown</title><meta name="description" content="Read Markdown in Finder with Peekdown, a free, open-source macOS Quick Look extension. Signed downloads for Intel and Apple Silicon."></head><body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><title>Peekdown — Quick Look for Markdown and YAML</title><meta name="description" content="Read Markdown and YAML in Finder with Peekdown, a free, open-source macOS Quick Look extension. Signed downloads for Intel and Apple Silicon."></head><body>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -319,7 +319,7 @@ footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px}
           <li><div><h3>Install the app</h3><p><b>Homebrew (recommended):</b> Run this command. The Quick Look extensions register automatically on install.</p><div class="cmd" style="margin-top:10px"><span id="brew-install">brew install --cask h0ck3ystyx/tap/peekdown</span><button class="copy" data-copy="brew-install" type="button">Copy</button></div><p style="margin-top:14px"><b>Manual install:</b> Download the signed, notarized <a href="https://github.com/h0ck3ystyx/peekdown/releases/download/v1.0.4/Peekdown-1.0.4.pkg">installer</a>. Choose <b>Install for me only</b> for <code>~/Applications</code> without admin access, or <b>Install for all users</b> for <code>/Applications</code> with admin authorization. If needed, click <b>Change Install Location…</b>. Prefer a ZIP? Extract the <a href="https://github.com/h0ck3ystyx/peekdown/releases/download/v1.0.4/Peekdown-1.0.4.zip">ZIP</a> and move the app to <code>~/Applications</code>. Create that folder if needed.</p></div></li>
           <li><div><h3>Open it once</h3><p>If you used the installer or ZIP, open Peekdown from the Applications folder so macOS can discover its extensions. You can quit it afterward. Homebrew installs handle this automatically.</p></div></li>
           <li><div><h3>Turn on the extension</h3><p>If previews do not appear, look for Quick Look in System Settings. On recent macOS versions, go to</p><span class="path">General › Login Items &amp; Extensions › Quick Look</span><p style="margin-top:6px">and switch on Peekdown.</p></div></li>
-          <li><div><h3>Press space on any .md file</h3><p>Select a Markdown file in Finder and tap the space bar. </p></div></li>
+          <li><div><h3>Press space on a Markdown or YAML file</h3><p>Select a Markdown file for a formatted preview, or a <code>.yaml</code> / <code>.yml</code> file for a syntax-colored preview.</p></div></li>
         </ol>
       </div>
       <div class="side-card">
@@ -336,6 +336,7 @@ brew uninstall --cask peekdown</pre>
           <tbody>
             <tr><td><code>.md .markdown</code></td><td><code>net.daringfireball.markdown</code></td></tr>
             <tr><td><code>.mdown .mkd .mkdn</code></td><td><code>net.daringfireball.markdown</code></td></tr>
+            <tr><td><code>.yaml .yml</code></td><td><code>public.yaml</code></td></tr>
           </tbody>
         </table></div>
         <h3>Preview not showing?</h3>

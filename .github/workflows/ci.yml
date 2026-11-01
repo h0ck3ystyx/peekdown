@@ -52,8 +52,11 @@ jobs:
             Shared/RenderingConstants.swift \
             PreviewExtension/CodeBlockLayoutManager.swift \
             PreviewExtension/SyntaxHighlighter.swift \
+            PreviewExtension/YAMLValidator.swift \
+            PreviewExtension/YAMLPreview.swift \
             PreviewExtension/MarkdownRenderer.swift \
             PreviewExtension/PreviewViewController.swift \
+            Tests/YAMLCases.swift \
             Tests/main.swift
           ./build/test-runner
       

@@ -32,6 +32,7 @@
 			<array>
 				<string>net.daringfireball.markdown</string>
 				<string>public.markdown</string>
+				<string>public.yaml</string>
 			</array>
 			<key>QLSupportsSearchableItems</key>
 			<false/>
