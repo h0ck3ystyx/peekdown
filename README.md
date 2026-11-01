@@ -2,14 +2,15 @@
 
 [Website & demo](https://h0ck3ystyx.github.io/peekdown/) · [Download the latest release](https://github.com/h0ck3ystyx/peekdown/releases/latest)
 
-A native macOS Quick Look extension that renders Markdown (`.md`, `.markdown`, `.mdown`, `.mkd`, `.mkdn`) as formatted documents when you press **Space** in Finder — headings, lists, tables, code, and more — plus a styled thumbnail for the Finder preview pane.
+A native macOS Quick Look extension that renders Markdown (`.md`, `.markdown`, `.mdown`, `.mkd`, `.mkdn`) as formatted documents when you press **Space** in Finder — headings, lists, tables, code, and more — and syntax-highlights standalone YAML (`.yaml`, `.yml`). Markdown files also get a styled thumbnail in the Finder preview pane.
 
 Markdown is parsed to an `NSAttributedString` in Swift and drawn with AppKit. No WebKit, no JavaScript, no HTML importer — so it works inside the Quick Look sandbox.
 
 ## Features
 
 - **Quick Look preview** — select a `.md` file and press Space for a rendered document.
-- **Finder thumbnails** — a styled card with the first heading and a text snippet.
+- **YAML preview** — select a `.yaml` or `.yml` file and press Space for a syntax-colored code panel. Oversized or invalid YAML stays plain monospaced text. See [YAML previews](docs/yaml-support.md).
+- **Finder thumbnails** — a styled card with the first heading and a text snippet for Markdown files.
 - Renders CommonMark-ish Markdown natively:
   - ATX and setext headings
   - bold, italic, strikethrough, inline code
@@ -23,6 +24,7 @@ Markdown is parsed to an `NSAttributedString` in Swift and drawn with AppKit. No
   - YAML front-matter stripping
 - Light and dark mode (system label colors).
 - The host app imports the `net.daringfireball.markdown` UTI so Finder routes `.md` files to this extension.
+- Standalone YAML uses the system `public.yaml` type (`.yaml` and `.yml`). The host app declares that type with document role and handler rank `None`, so Peekdown does not become the default editor.
 
 See [native Markdown support](docs/markdown-support.md) for syntax examples and
 limitations, including the new autolinks, footnotes, and alert support. Quick Look
@@ -45,7 +47,7 @@ Download the latest release from the [releases page](https://github.com/h0ck3yst
 - **Installer package**: Download and run `Peekdown-VERSION.pkg`
 - **ZIP archive**: Download `Peekdown-VERSION.zip`, extract, and move `Peekdown.app` to `~/Applications`
 
-After installation, launch `Peekdown.app` once, then select any `.md` file in Finder
+After installation, launch `Peekdown.app` once, then select a `.md`, `.yaml`, or `.yml` file in Finder
 and press **Space** to preview it.
 
 ## Distribution releases
@@ -107,7 +109,14 @@ killall quicklookd; qlmanage -r; qlmanage -r cache
 open /Applications/Peekdown.app
 ```
 
-Then select any `.md` file in Finder and press **Space**.
+Then select a `.md` or `.yaml` file in Finder and press **Space**. For a command-line check after the extension is registered:
+
+```bash
+qlmanage -p file.yaml
+qlmanage -p file.yml
+```
+
+On macOS 26/27, `qlmanage -p` can crash for extension-based previews. Use Finder Space there, and `qlmanage -t` for Markdown thumbnails.
 
 ### Command-Line-Tools-only fallback (`build.sh`)
 
@@ -119,7 +128,8 @@ Then select any `.md` file in Finder and press **Space**.
 Finder (Space)
   └─ Quick Look → PreviewExtension.appex
        └─ PreviewViewController (QLPreviewingController)
-            └─ MarkdownRenderer: markdown → NSAttributedString
+            ├─ Markdown → MarkdownRenderer → NSAttributedString
+            └─ YAML → YAMLPreview (syntax colors, or plain text)
                  └─ NSTextView inside NSScrollView
 ```
 
@@ -127,11 +137,11 @@ Three targets live inside a single app:
 
 | Target | Type | Purpose |
 |---|---|---|
-| `Peekdown` | macOS app | Registers the markdown UTI; hosts the extensions |
-| `PreviewExtension` | Quick Look preview (`.appex`) | Renders the document on Space |
-| `ThumbnailExtension` | Quick Look thumbnail (`.appex`) | Draws the Finder thumbnail card |
+| `Peekdown` | macOS app | Registers Markdown and YAML types; hosts the extensions |
+| `PreviewExtension` | Quick Look preview (`.appex`) | Renders Markdown and YAML on Space |
+| `ThumbnailExtension` | Quick Look thumbnail (`.appex`) | Draws the Finder thumbnail card for Markdown |
 
-`MarkdownRenderer.swift` is a self-contained, dependency-free markdown → `NSAttributedString` renderer (block parser + inline tokenizer). It deliberately avoids `WKWebView` (its WebContent XPC subprocess is unreliable inside the sandbox) and data-based `QLPreviewReply` (whose WebKit context does not execute JavaScript).
+`MarkdownRenderer.swift` is a self-contained, dependency-free markdown → `NSAttributedString` renderer (block parser + inline tokenizer). It deliberately avoids `WKWebView` (its WebContent XPC subprocess is unreliable inside the sandbox) and data-based `QLPreviewReply` (whose WebKit context does not execute JavaScript). `YAMLPreview.swift` reuses that renderer's code-panel metrics and the YAML lexer, after a structural check. Invalid or oversized YAML is the same panel with plain monospaced text.
 
 ## Project layout
 
@@ -144,7 +154,7 @@ Shared/                  # shared front-matter parser
 Tests/                   # parser and renderer regressions
 scripts/                 # test runner and installer packaging
 Peekdown/         # host app (SwiftUI)
-PreviewExtension/        # Quick Look preview extension + MarkdownRenderer
+PreviewExtension/        # Quick Look preview extension, Markdown and YAML renderers
 ThumbnailExtension/      # Quick Look thumbnail extension
 Packaging/               # hand-written plists used by build.sh
 ```

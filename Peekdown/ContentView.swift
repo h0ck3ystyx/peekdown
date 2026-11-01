@@ -14,7 +14,7 @@ struct ContentView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Peekdown")
                         .font(.largeTitle.bold())
-                    Text("Quick Look for Markdown files")
+                    Text("Quick Look for Markdown and YAML files")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
@@ -33,7 +33,7 @@ struct ContentView: View {
             Group {
                 Label("Usage", systemImage: "hand.tap")
                     .font(.headline)
-                Text("Select any .md or .markdown file in Finder and press Space to see it rendered as a formatted document.")
+                Text("Select a Markdown or YAML file in Finder and press Space. Markdown opens as a formatted document. YAML opens in a syntax-colored code panel, or as plain text when the file is too large or not valid YAML.")
                     .foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -64,7 +64,7 @@ struct ContentView: View {
 
             Divider()
 
-            Text("Markdown · tables · task lists · code blocks · autolinks · footnotes · alerts")
+            Text("Markdown · tables · task lists · code blocks · YAML · autolinks · footnotes · alerts")
                 .font(.caption)
                 .foregroundColor(.secondary)
         }

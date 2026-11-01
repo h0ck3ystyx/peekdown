@@ -4,7 +4,9 @@ Peekdown provides Quick Look previews and thumbnails. The host app is a setup
 screen, so its Markdown document role and handler rank are both `None`.
 It imports `net.daringfireball.markdown` instead of claiming ownership of the type.
 The preview and thumbnail extensions continue to accept this identifier and
-`public.markdown`.
+`public.markdown`. YAML previews use the system type `public.yaml` for `.yaml` and `.yml`.
+That document type uses the same role and rank (`None` / `None`) and is not redeclared
+as an imported UTI. The registration check below includes those two extensions.
 
 This follows Apple's guidance for [using an existing type identifier](https://developer.apple.com/documentation/uniformtypeidentifiers/defining-file-and-data-types-for-your-app)
 and its [handler rank definitions](https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html).

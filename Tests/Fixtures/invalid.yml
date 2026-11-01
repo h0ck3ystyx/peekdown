@@ -1,0 +1,2 @@
+# Invalid YAML should remain readable without syntax colors.
+key: "unterminated
