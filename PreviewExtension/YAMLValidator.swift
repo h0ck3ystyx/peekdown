@@ -215,11 +215,10 @@ enum YAMLValidator {
                 if c == " " {
                     var j = 0
                     while peek(j) == " " { j += 1 }
-                    if peek(j) == ":" && isValueColon(j) {
-                        guard any else { return fail("empty key") }
-                        while peek() == " " { advance() }
-                        return true
-                    }
+                    // Consume the entire run once; rescanning it at each space
+                    // makes a long key quadratic in its input length.
+                    while j > 0 { advance(); j -= 1 }
+                    continue
                 }
                 if c != " " { any = true }
                 advance()

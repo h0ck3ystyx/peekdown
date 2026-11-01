@@ -64,3 +64,7 @@ previews and editor associations. Light/dark YAML rendering was checked offscree
 
 The structural parser stops after 128 nested parser nodes and falls back to plain
 text. YAML panels honor the host's text-size and code-spacing preferences.
+
+File reads enforce the byte limit on a single open handle, including one overflow
+byte to detect truncation; a separate file-size check is not trusted. Long runs
+of whitespace in YAML keys are consumed once to avoid quadratic parsing work.

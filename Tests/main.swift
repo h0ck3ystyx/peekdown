@@ -479,3 +479,21 @@ precondition(PreviewDocumentKind.kind(for: URL(fileURLWithPath: "/tmp/notes.mdx"
 precondition(PreviewFileReader.read(url: yamlRoot.appendingPathComponent("missing.yaml"), maxBytes: nil) == nil)
 precondition(previewText(writeYAML("notes.mdx", "# Heading\n\n<Card />")).string.contains("Static MDX preview"))
 print("Passed YAML integration: shared appearance, bounded nesting, read errors, and MDX routing")
+
+// Security regressions: adversarial keys and reads that exceed their byte budget.
+let wideKey = "a" + String(repeating: " ", count: 60_000) + "b: 1\n"
+let wideStart = Date()
+precondition(YAMLValidator.isValid(wideKey))
+precondition(Date().timeIntervalSince(wideStart) < 2, "Whitespace key parsing must stay linear")
+let readURL = writeYAML("bounded.yaml", "abcd")
+precondition(PreviewFileReader.read(url: readURL, maxBytes: 4)?.isTruncated == false)
+let overRead = PreviewFileReader.read(url: readURL, maxBytes: 3)!
+precondition(overRead.isTruncated && overRead.text == "abc")
+try Data(repeating: 97, count: RenderingConstants.maxFileSize + 1).write(to: readURL)
+let cappedRead = PreviewFileReader.read(url: readURL, maxBytes: nil)!
+precondition(cappedRead.isTruncated && cappedRead.text.utf8.count == SyntaxHighlighter.maxDocumentLength)
+precondition(previewText(readURL).string.contains("Preview truncated"))
+let largeMarkdown = yamlRoot.appendingPathComponent("large.md")
+try FileManager.default.copyItem(at: readURL, to: largeMarkdown)
+precondition(previewText(largeMarkdown).string.contains("File Too Large"))
+print("Passed security regressions: long keys, exact/overflow byte limits, and large-file routing")
