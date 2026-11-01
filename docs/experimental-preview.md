@@ -1,6 +1,15 @@
 # Experimental native previews
 
-This branch prototypes appearance preferences, Mermaid, display math, and static MDX. It is not a published release. Open Peekdown to adjust text size, paragraph density, and code spacing. Enable the two experimental switches, select **Show experiment demo in Finder**, then press Space. Close and reopen a preview after changing settings.
+Development source includes appearance preferences, Mermaid, display math, and
+static MDX for the next release. Published v1.0.4 downloads do not include these
+features yet. Open Peekdown to adjust text size (80–160%), paragraph density,
+and code spacing (0–6 points). Enable the two experimental switches for diagrams
+and equations, then close and reopen Quick Look. Both switches default to off.
+
+For a combined demo, select `Peekdown/Resources/Experimental-preview.md` in
+Finder and press Space. The app's demo shortcut currently has a known reveal
+issue; open the source demo directly. Use `Tests/Fixtures/experimental.mdx` for
+static MDX and `Tests/Fixtures/sample.yaml` for YAML.
 
 - Mermaid: small `flowchart`, `graph`, and `sequenceDiagram` fences. Unsupported diagrams stay visible as source. Styling directives, HTML labels, and interactions are excluded.
 - Math: display expressions on separate lines between `$$` or `\[` and `\]`. Inline math is not enabled. Unsupported expressions stay visible as source.
@@ -23,3 +32,33 @@ Signed experimental build 16 was exercised in Finder Quick Look:
 - Markdown retained **Open with Cursor**; MDX retained **Open with TextEdit**.
 
 The two experimental switches were left enabled for local testing. The host's **Show experiment demo in Finder** shortcut did not reveal the bundled file in this session and needs follow-up. Open `Peekdown/Resources/Experimental-preview.md` in Finder directly for now.
+
+## Syntax examples
+
+Mermaid uses a fenced block:
+
+````markdown
+```mermaid
+flowchart LR
+    A[Read Markdown] --> B[Native preview]
+```
+````
+
+Display math requires delimiters on their own lines:
+
+```text
+$$
+x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}
+$$
+```
+
+Mermaid inputs are capped at 4,096 UTF-16 units and 48 nonempty lines. Math
+inputs are capped at 1,024 UTF-16 units and 16 brace levels, with at most 32 lines
+between display delimiters. Up to four diagram/equation blocks are attempted per
+document, including failed attempts. Invalid, unsupported, or over-budget blocks
+stay readable as source. Generated images fit the available preview width.
+
+This does not support inline math, arbitrary Mermaid diagram families, HTML
+labels, Mermaid interactions, or executing MDX imports/components. MDX source
+preservation is conservative: a paragraph containing angle brackets or braces
+may be displayed entirely as code, even when it also contains ordinary prose.

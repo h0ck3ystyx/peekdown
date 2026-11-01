@@ -1,5 +1,7 @@
 # YAML previews
 
+Development feature for the next release; not included in published v1.0.4 downloads.
+
 Press Space on a `.yaml` or `.yml` file in Finder to preview it. The preview
 uses the same monospaced code panel, padding, and light/dark syntax colors as a
 fenced YAML block inside a Markdown document. Finder thumbnails stay

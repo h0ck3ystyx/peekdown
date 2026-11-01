@@ -6,10 +6,22 @@ A native macOS Quick Look extension that renders Markdown (`.md`, `.markdown`, `
 
 Markdown is parsed to an `NSAttributedString` in Swift and drawn with AppKit. No WebKit, no JavaScript, no HTML importer — so it works inside the Quick Look sandbox.
 
+## Release status
+
+The published installer, ZIP, and Homebrew cask currently provide **v1.0.4**.
+The appearance settings, experimental Mermaid/math, static MDX, and standalone
+YAML described below are in the development source for the next release; they
+are not included in those downloads yet. YAML is being integrated in
+[PR #24](https://github.com/h0ck3ystyx/peekdown/pull/24).
+
 ## Features
 
 - **Quick Look preview** — select a `.md` file and press Space for a rendered document.
-- **YAML preview** — select a `.yaml` or `.yml` file and press Space for a syntax-colored code panel. Oversized or invalid YAML stays plain monospaced text. See [YAML previews](docs/yaml-support.md).
+- **YAML preview (next release)** — select a `.yaml` or `.yml` file and press Space for a syntax-colored code panel. Oversized or invalid YAML stays plain monospaced text. See [YAML previews](docs/yaml-support.md).
+- **Appearance preferences (next release)** — open Peekdown to adjust text size (80–160%), compact paragraph spacing, and code line spacing. Reopen Quick Look to apply changes.
+- **Experimental Mermaid (next release, off by default)** — native flowcharts and sequence diagrams in `mermaid` fences. Unsupported input remains source.
+- **Experimental display math (next release, off by default)** — native equations between standalone `$$` or `\[` / `\]` delimiter lines. Inline math is not enabled.
+- **Static MDX (next release)** — `.mdx` previews render ordinary Markdown; imports, JSX, and expressions remain literal source and never execute. This is not full MDX component rendering.
 - **Finder thumbnails** — a styled card with the first heading and a text snippet for Markdown files.
 - Renders CommonMark-ish Markdown natively:
   - ATX and setext headings
@@ -27,7 +39,7 @@ Markdown is parsed to an `NSAttributedString` in Swift and drawn with AppKit. No
 - Standalone YAML uses the system `public.yaml` type (`.yaml` and `.yml`). The host app declares that type with document role and handler rank `None`, so Peekdown does not become the default editor.
 
 See [native Markdown support](docs/markdown-support.md) for syntax examples and
-limitations, including the new autolinks, footnotes, and alert support. Quick Look
+limitations. See [experimental previews and settings](docs/experimental-preview.md) for examples and limits. Quick Look
 may block opening external links; copying a recognized destination is supported.
 The host app registers Markdown types for previews without claiming to be a
 document editor or viewer.
@@ -47,8 +59,8 @@ Download the latest release from the [releases page](https://github.com/h0ck3yst
 - **Installer package**: Download and run `Peekdown-VERSION.pkg`
 - **ZIP archive**: Download `Peekdown-VERSION.zip`, extract, and move `Peekdown.app` to `~/Applications`
 
-After installation, launch `Peekdown.app` once, then select a `.md`, `.yaml`, or `.yml` file in Finder
-and press **Space** to preview it.
+After installation, launch `Peekdown.app` once, then select a Markdown file in Finder
+and press **Space**. Development builds also accept `.yaml`, `.yml`, and `.mdx`.
 
 ## Distribution releases
 
@@ -96,7 +108,10 @@ xcodebuild -project Peekdown.xcodeproj \
   -derivedDataPath ./build DEVELOPMENT_TEAM=YOUR_TEAM_ID -allowProvisioningUpdates build
 ```
 
-The first build generates the `Apple Development` certificate and provisioning profiles automatically.
+The build resolves pinned Swift dependencies. Signed preview settings use a
+team-prefixed App Group; developers using another team must update the group
+identifier in `Shared/PreviewSettings.swift` and both app/preview entitlements
+through `project.yml`. Configure signing and provisioning for that group.
 
 ### 3. Install
 
@@ -137,11 +152,11 @@ Three targets live inside a single app:
 
 | Target | Type | Purpose |
 |---|---|---|
-| `Peekdown` | macOS app | Registers Markdown and YAML types; hosts the extensions |
-| `PreviewExtension` | Quick Look preview (`.appex`) | Renders Markdown and YAML on Space |
+| `Peekdown` | macOS app | Registers preview types; hosts settings and extensions |
+| `PreviewExtension` | Quick Look preview (`.appex`) | Renders Markdown, static MDX, and YAML on Space |
 | `ThumbnailExtension` | Quick Look thumbnail (`.appex`) | Draws the Finder thumbnail card for Markdown |
 
-`MarkdownRenderer.swift` is a self-contained, dependency-free markdown → `NSAttributedString` renderer (block parser + inline tokenizer). It deliberately avoids `WKWebView` (its WebContent XPC subprocess is unreliable inside the sandbox) and data-based `QLPreviewReply` (whose WebKit context does not execute JavaScript). `YAMLPreview.swift` reuses that renderer's code-panel metrics and the YAML lexer, after a structural check. Invalid or oversized YAML is the same panel with plain monospaced text.
+`MarkdownRenderer.swift` parses Markdown into native attributed text. Optional diagram and equation images use pinned BeautifulMermaidSwift and SwiftMath dependencies; see [dependency notices](ThirdParty/README.md). It deliberately avoids `WKWebView` (its WebContent XPC subprocess is unreliable inside the sandbox) and data-based `QLPreviewReply` (whose WebKit context does not execute JavaScript). `YAMLPreview.swift` reuses that renderer's code-panel metrics and the YAML lexer, after a structural check. Invalid or oversized YAML is the same panel with plain monospaced text.
 
 ## Project layout
 
@@ -150,7 +165,10 @@ project.yml              # XcodeGen spec — source of truth for the .xcodeproj
 build.sh                 # universal build (ad-hoc by default)
 release.sh               # Developer ID signing, notarization, signed .pkg
 RELEASE.md               # certificates and release instructions
-Shared/                  # shared front-matter parser
+Shared/                  # front matter, preview settings, static MDX
+NativeSupport/           # native Mermaid/math bridge
+Vendor/                  # SwiftMath with extension resource lookup patch
+ThirdParty/              # dependency and font license notices
 Tests/                   # parser and renderer regressions
 scripts/                 # test runner and installer packaging
 Peekdown/         # host app (SwiftUI)
@@ -167,7 +185,9 @@ Packaging/               # hand-written plists used by build.sh
 
 ## License
 
-Peekdown is available under the [MIT License](LICENSE).
+Peekdown’s own source is available under the [MIT License](LICENSE). Bundled
+dependencies and fonts retain their respective licenses; see
+[third-party notices](ThirdParty/README.md), including ElkSwift’s EPL-2.0 license.
 
 ### Quick Look’s “Open with” button
 
