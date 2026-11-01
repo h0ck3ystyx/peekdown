@@ -39,7 +39,7 @@ compile ThumbnailExtension "$TE/Contents/MacOS/ThumbnailExtension" \
   -Xlinker -e -Xlinker _NSExtensionMain \
   Shared/MarkdownText.swift Shared/RenderingConstants.swift Shared/PreviewSettings.swift Shared/StaticMDX.swift ThumbnailExtension/ThumbnailProvider.swift
 compile Peekdown "$DEST/Contents/MacOS/Peekdown" \
-  -framework SwiftUI Shared/PreviewSettings.swift Shared/StaticMDX.swift Peekdown/PeekdownApp.swift Peekdown/ContentView.swift
+  -framework SwiftUI Shared/PreviewSettings.swift Shared/StaticMDX.swift Peekdown/PeekdownApp.swift Peekdown/ContentView.swift Peekdown/UpdateService.swift Peekdown/UpdateChecker.swift
 cp Packaging/PreviewExt-Info.plist "$PE/Contents/Info.plist"
 cp Packaging/ThumbExt-Info.plist "$TE/Contents/Info.plist"
 cp Packaging/App-Info.plist "$DEST/Contents/Info.plist"

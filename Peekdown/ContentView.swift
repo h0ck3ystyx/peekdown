@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ContentView: View {
+    @ObservedObject var updates: UpdateChecker
     @State private var preferences = PreviewSettings.load()
 
     var body: some View {
@@ -64,6 +65,7 @@ struct ContentView: View {
 
             Divider()
 
+            Button("Check for Updates…") { updates.check() }
             Text("Markdown · tables · task lists · code blocks · YAML · autolinks · footnotes · alerts")
                 .font(.caption)
                 .foregroundColor(.secondary)
