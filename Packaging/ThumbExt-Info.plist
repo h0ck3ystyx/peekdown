@@ -30,6 +30,7 @@
             <array>
                 <string>net.daringfireball.markdown</string>
                 <string>public.markdown</string>
+                <string>com.markdownpreview.mdx</string>
             </array>
             <key>QLThumbnailMinimumDimension</key>
             <integer>0</integer>

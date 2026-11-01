@@ -12,11 +12,16 @@ mkdir -p "$DEST/Contents/MacOS" "$DEST/Contents/Resources" "$DEST/Contents/PlugI
 compile() {
     local name="$1" output="$2"
     shift 2
-    local arch
+    local arch native
     for arch in arm64 x86_64; do
-        xcrun swiftc -O -emit-executable -module-name "$name" \
+        local support=(-module-name "$name")
+        if [[ "$name" == PreviewExtension ]]; then
+            native=$(./scripts/build-native-support.sh "$arch")
+            support+=(-I "$native/Modules" -L "$native" -lPeekdownNativeSupport)
+        fi
+        xcrun swiftc -O -emit-executable \
           -sdk "$SDK" -target "$arch-apple-macos12.0" \
-          -o "$BUILD/$name-$arch" "$@"
+          -o "$BUILD/$name-$arch" "${support[@]}" "$@"
     done
     xcrun lipo -create "$BUILD/$name-arm64" "$BUILD/$name-x86_64" -output "$output"
     xcrun lipo "$output" -verify_arch arm64 x86_64
@@ -28,18 +33,22 @@ echo "==> Compiling universal extensions and app"
 compile PreviewExtension "$PE/Contents/MacOS/PreviewExtension" \
   -framework QuickLookUI -framework AppKit -application-extension \
   -Xlinker -e -Xlinker _NSExtensionMain \
-  Shared/MarkdownText.swift Shared/RenderingConstants.swift PreviewExtension/CodeBlockLayoutManager.swift PreviewExtension/SyntaxHighlighter.swift PreviewExtension/MarkdownRenderer.swift PreviewExtension/PreviewViewController.swift
+  Shared/MarkdownText.swift Shared/RenderingConstants.swift Shared/PreviewSettings.swift Shared/StaticMDX.swift PreviewExtension/PreviewImageAttachment.swift PreviewExtension/CodeBlockLayoutManager.swift PreviewExtension/SyntaxHighlighter.swift PreviewExtension/MarkdownRenderer.swift PreviewExtension/PreviewViewController.swift
 compile ThumbnailExtension "$TE/Contents/MacOS/ThumbnailExtension" \
   -framework QuickLookThumbnailing -framework AppKit -application-extension \
   -Xlinker -e -Xlinker _NSExtensionMain \
-  Shared/MarkdownText.swift Shared/RenderingConstants.swift ThumbnailExtension/ThumbnailProvider.swift
+  Shared/MarkdownText.swift Shared/RenderingConstants.swift Shared/PreviewSettings.swift Shared/StaticMDX.swift ThumbnailExtension/ThumbnailProvider.swift
 compile Peekdown "$DEST/Contents/MacOS/Peekdown" \
-  -framework SwiftUI Peekdown/PeekdownApp.swift Peekdown/ContentView.swift
+  -framework SwiftUI Shared/PreviewSettings.swift Shared/StaticMDX.swift Peekdown/PeekdownApp.swift Peekdown/ContentView.swift
 cp Packaging/PreviewExt-Info.plist "$PE/Contents/Info.plist"
 cp Packaging/ThumbExt-Info.plist "$TE/Contents/Info.plist"
 cp Packaging/App-Info.plist "$DEST/Contents/Info.plist"
 cp LICENSE "$DEST/Contents/Resources/LICENSE"
+# Keep dependency resources inside the signed extension Resources directory.
+ditto build/native/arm64/arm64-apple-macosx/release/SwiftMath_SwiftMath.bundle "$PE/Contents/Resources/SwiftMath_SwiftMath.bundle"
+cp -R ThirdParty "$DEST/Contents/Resources/ThirdParty"
 cp Peekdown/Resources/Peekdown.icns "$DEST/Contents/Resources/Peekdown.icns"
+cp Peekdown/Resources/Experimental-preview.md "$DEST/Contents/Resources/Experimental-preview.md"
 for bundle in "$PE" "$TE" "$DEST"; do
     /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$bundle/Contents/Info.plist"
     /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" "$bundle/Contents/Info.plist"

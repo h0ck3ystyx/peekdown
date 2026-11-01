@@ -338,3 +338,50 @@ for y in Int(firstPanelLine.midY * rasterScale)...Int(lastPanelLine.midY * raste
 }
 precondition(links(panelDocument).isEmpty)
 print("Passed continuous code panels, separate blocks, wrapping, blank lines, and padding")
+
+// MARK: - Experimental settings and static MDX
+let settingsStore = UserDefaults(suiteName: "PeekdownTests.\(UUID().uuidString)")!
+precondition(PreviewSettings.load(from: settingsStore) == .defaults)
+settingsStore.set(99.0, forKey: "textScale")
+settingsStore.set(-99.0, forKey: "codeLineSpacing")
+let boundedSettings = PreviewSettings.load(from: settingsStore)
+precondition(boundedSettings.textScale == 1.6 && boundedSettings.codeLineSpacing == 0)
+var largeSettings = PreviewSettings.defaults
+largeSettings.textScale = 1.5
+largeSettings.compact = true
+let scaledHeading = MarkdownRenderer.attributedString(from: "# Title", settings: largeSettings)
+precondition((attribute(.font, at: "Title", in: scaledHeading) as! NSFont).pointSize == 45)
+let mdx = "import { Card } from './secret.js'\n\n# Heading\n\n<Card onClick={() => steal()}>\nHello **world**\n</Card>\n\n{fetch('https://example.org')}\n\n```js\nconst literal = '<tag>';\n```"
+let staticView = render(StaticMDX.markdownView(of: mdx))
+precondition(staticView.string.contains("Heading"))
+for line in ["import { Card } from './secret.js'", "<Card onClick={() => steal()}>", "Hello **world**", "</Card>", "{fetch('https://example.org')}", "const literal = '<tag>';"] {
+    precondition(staticView.string.contains(line), "Static MDX lost source: \(line)")
+}
+precondition(links(staticView).isEmpty, "MDX expressions must remain literal")
+var experiments = PreviewSettings.defaults
+experiments.diagrams = true
+experiments.equations = true
+func attachmentCount(_ text: NSAttributedString) -> Int {
+    var count = 0
+    text.enumerateAttribute(.attachment, in: NSRange(location: 0, length: text.length)) { value, _, _ in
+        if value != nil { count += 1 }
+    }
+    return count
+}
+for mode in [NSAppearance.Name.aqua, .darkAqua] {
+    NSAppearance(named: mode)!.performAsCurrentDrawingAppearance {
+        let document = "```mermaid\nflowchart LR\n A[Read] --> B[Preview]\n```\n\n$$\nx = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}\n$$"
+        let output = MarkdownRenderer.attributedString(from: document, settings: experiments)
+        precondition(attachmentCount(output) == 2, "Both native diagram and math must render")
+        precondition(attachmentCount(render(document)) == 0, "Experimental features must default off")
+        let sequence = MarkdownRenderer.attributedString(from: "```mermaid\nsequenceDiagram\nAlice->>Bob: Hello\n```", settings: experiments)
+        precondition(attachmentCount(sequence) == 1)
+    }
+}
+for source in ["```mermaid\ngantt\n dateFormat YYYY\n```", "$$\n\\notARealMathCommand{a}\n$$", "$$\n" + String(repeating: "{", count: 30) + "\n$$"] {
+    let output = MarkdownRenderer.attributedString(from: source, settings: experiments)
+    precondition(attachmentCount(output) == 0 && output.length > 0, "Unsupported input must preserve source")
+}
+let dollars = MarkdownRenderer.attributedString(from: "Costs $5 and $10. `$$literal$$`", settings: experiments)
+precondition(attachmentCount(dollars) == 0 && dollars.string.contains("$5"))
+print("Passed experimental preferences, native Mermaid/math in both appearances, source fallbacks, and static MDX")

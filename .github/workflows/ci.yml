@@ -42,21 +42,8 @@ jobs:
           APPLICATION_IDENTITY: "-"
       
       - name: Run tests
-        run: |
-          xcrun swiftc -O -emit-executable -module-name Tests \
-            -sdk "$(xcrun --sdk macosx --show-sdk-path)" \
-            -target arm64-apple-macos12.0 \
-            -o build/test-runner \
-            -framework AppKit -framework QuickLookUI \
-            Shared/MarkdownText.swift \
-            Shared/RenderingConstants.swift \
-            PreviewExtension/CodeBlockLayoutManager.swift \
-            PreviewExtension/SyntaxHighlighter.swift \
-            PreviewExtension/MarkdownRenderer.swift \
-            PreviewExtension/PreviewViewController.swift \
-            Tests/main.swift
-          ./build/test-runner
-      
+        run: ./scripts/test.sh
+
       - name: Verify code signature
         run: |
           codesign --verify --deep --strict --verbose=2 build/local/Peekdown.app

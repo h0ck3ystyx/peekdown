@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct ContentView: View {
+    @State private var preferences = PreviewSettings.load()
+
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack(spacing: 12) {
@@ -37,17 +39,27 @@ struct ContentView: View {
             }
 
             Group {
-                Label("Troubleshooting", systemImage: "wrench.and.screwdriver")
-                    .font(.headline)
-                Text("If previews don't appear, reset the Quick Look daemon in Terminal:")
-                    .foregroundColor(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text("qlmanage -r && qlmanage -r cache && killall Finder")
-                    .font(.system(.body, design: .monospaced))
-                    .padding(8)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color(nsColor: .textBackgroundColor))
-                    .cornerRadius(6)
+                Text("Preview appearance").font(.headline)
+                HStack {
+                    Text("Text size")
+                    Slider(value: $preferences.textScale, in: 0.8...1.6, step: 0.1)
+                    Text("\(Int(preferences.textScale * 100))%").monospacedDigit().frame(width: 48)
+                }
+                Toggle("Compact paragraph spacing", isOn: $preferences.compact)
+                HStack {
+                    Text("Code line spacing")
+                    Slider(value: $preferences.codeLineSpacing, in: 0...6, step: 1)
+                }
+                Toggle("Experimental Mermaid diagrams", isOn: $preferences.diagrams)
+                Toggle("Experimental display equations", isOn: $preferences.equations)
+                Text("Settings apply when you reopen Quick Look. Diagrams support small flowcharts and sequence diagrams; unsupported content remains source text.")
+                    .font(.caption).foregroundColor(.secondary).fixedSize(horizontal: false, vertical: true)
+                Button("Show experiment demo in Finder") {
+                    if let url = Bundle.main.url(forResource: "Experimental-preview", withExtension: "md") {
+                        NSWorkspace.shared.activateFileViewerSelecting([url])
+                    }
+                }
+                Button("Reset preview settings") { preferences = .defaults }
             }
 
             Divider()
@@ -56,6 +68,7 @@ struct ContentView: View {
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
+        .onChange(of: preferences) { value in value.save() }
         .padding(28)
         .frame(width: 480)
     }
