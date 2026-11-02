@@ -2,6 +2,8 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p build/tests
+xcrun swiftc Peekdown/UpdateService.swift Tests/Updates/main.swift -o build/tests/update-checks
+build/tests/update-checks
 ARCH=$(uname -m)
 NATIVE=$(./scripts/build-native-support.sh "$ARCH")
 ditto "$NATIVE/SwiftMath_SwiftMath.bundle" build/tests/SwiftMath_SwiftMath.bundle
