@@ -1,6 +1,6 @@
 # Manual update checks
 
-Development feature for the next release after v1.1.0.
+Available in Peekdown v1.1.1 and later.
 
 Choose **Peekdown → Check for Updates…** in the app menu, or use the button in
 the app window. The results window shows the installed version and whether a

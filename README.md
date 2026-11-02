@@ -8,13 +8,13 @@ Markdown is parsed to an `NSAttributedString` in Swift and drawn with AppKit. No
 
 ## Release status
 
-**v1.1.0** includes standalone YAML, appearance settings, static MDX, and
+**v1.1.1** includes manual update checks, standalone YAML, appearance settings, static MDX, and
 experimental native Mermaid/math. Diagram and equation rendering are off by
 default; enable them in Peekdown. See the support docs for supported syntax.
 
 ## Features
 
-- **Manual update checks (development, next release)** — check for stable GitHub releases from the app menu or window, then open the release page to download. No background checks or automatic installation. See [update checks and network behavior](docs/update-checks.md).
+- **Manual update checks (v1.1.1)** — check for stable GitHub releases from the app menu or window, then open the release page to download. No background checks or automatic installation. See [update checks and network behavior](docs/update-checks.md).
 - **Quick Look preview** — select a `.md` file and press Space for a rendered document.
 - **YAML preview** — select a `.yaml` or `.yml` file and press Space for a syntax-colored code panel. Oversized or invalid YAML stays plain monospaced text. See [YAML previews](docs/yaml-support.md).
 - **Appearance preferences** — open Peekdown to adjust text size (80–160%), compact paragraph spacing, and code line spacing. Reopen Quick Look to apply changes.
