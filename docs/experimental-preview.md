@@ -6,8 +6,9 @@ and code spacing (0–6 points). Enable the two experimental switches for diagra
 and equations, then close and reopen Quick Look. Both switches default to off.
 
 For a combined demo, select `Peekdown/Resources/Experimental-preview.md` in
-Finder and press Space. The app's demo shortcut currently has a known reveal
-issue; open the source demo directly. Use `Tests/Fixtures/experimental.mdx` for
+Finder and press Space. In v1.1.1 the app's demo shortcut has a known reveal issue; open the source demo
+directly. Development builds replace it with **Save experiment demo…**, which
+asks for a destination and reveals the saved file. See [metadata and demo saving](front-matter.md). Use `Tests/Fixtures/experimental.mdx` for
 static MDX and `Tests/Fixtures/sample.yaml` for YAML.
 
 - Mermaid: small `flowchart`, `graph`, and `sequenceDiagram` fences. Unsupported diagrams stay visible as source. Styling directives, HTML labels, and interactions are excluded.

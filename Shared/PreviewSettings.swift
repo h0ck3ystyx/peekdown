@@ -9,6 +9,7 @@ struct PreviewSettings: Equatable {
     var codeLineSpacing: Double = 2
     var diagrams: Bool = false
     var equations: Bool = false
+    var metadata: Bool = false
 
     static var store: UserDefaults { UserDefaults(suiteName: suiteName) ?? .standard }
     static func load(from store: UserDefaults = store) -> PreviewSettings {
@@ -23,6 +24,7 @@ struct PreviewSettings: Equatable {
             result.codeLineSpacing = value.isFinite ? min(6, max(0, value)) : 2
         }
         result.diagrams = store.bool(forKey: "diagrams")
+        result.metadata = store.bool(forKey: "metadata")
         result.equations = store.bool(forKey: "equations")
         return result
     }
@@ -32,5 +34,6 @@ struct PreviewSettings: Equatable {
         store.set(codeLineSpacing, forKey: "codeLineSpacing")
         store.set(diagrams, forKey: "diagrams")
         store.set(equations, forKey: "equations")
+        store.set(metadata, forKey: "metadata")
     }
 }

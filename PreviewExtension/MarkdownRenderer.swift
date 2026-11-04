@@ -24,9 +24,26 @@ private final class RenderingSession {
     // MARK: - Public entry point
 
     func attributedString(from source: String, fontSize: CGFloat = 14) -> NSAttributedString {
-        let normalized = MarkdownText.stripFrontMatter(source)
+        let frontMatter = MarkdownText.frontMatter(source)
+        let normalized = frontMatter.body
         let lines = extractDefinitions(normalized.components(separatedBy: "\n"))
-        let out = NSMutableAttributedString(attributedString: renderBlocks(lines, fontSize: fontSize))
+        let out = NSMutableAttributedString()
+        if settings.metadata, let metadata = frontMatter.metadata {
+            out.append(heading(2, text: "Metadata", fontSize: fontSize))
+            if metadata.isEmpty {
+                out.append(paragraph("No metadata values.", fontSize: fontSize))
+            } else {
+                // Show bounded literal YAML, never render metadata as Markdown or
+                // resolve tags/aliases. The structural validator is itself bounded.
+                let limit = 16_384
+                let oversized = metadata.utf16.count > limit
+                let visible = String(decoding: metadata.utf16.prefix(limit), as: UTF16.self)
+                let valid = !oversized && YAMLValidator.isValid(metadata)
+                if !valid { out.append(paragraph(oversized ? "Metadata truncated; showing source." : "Unrecognized YAML; showing source.", fontSize: fontSize)) }
+                out.append(codeBlock(visible + (oversized ? "\n…" : ""), fontSize: fontSize, hint: valid ? "yaml" : ""))
+            }
+        }
+        out.append(renderBlocks(lines, fontSize: fontSize))
         if !referenceOrder.isEmpty {
             out.append(heading(2, text: "Footnotes", fontSize: fontSize))
             var index = 0
