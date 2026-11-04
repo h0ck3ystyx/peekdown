@@ -497,3 +497,22 @@ let largeMarkdown = yamlRoot.appendingPathComponent("large.md")
 try FileManager.default.copyItem(at: readURL, to: largeMarkdown)
 precondition(previewText(largeMarkdown).string.contains("File Too Large"))
 print("Passed security regressions: long keys, exact/overflow byte limits, and large-file routing")
+
+// Optional front matter remains literal, bounded, and separate from document parsing.
+var metadataSettings = PreviewSettings.defaults
+metadataSettings.metadata = true
+let metadataSource = "---\ntitle: Café 👀\nlabels: [one, two]\nnested:\n  enabled: true\n---\n# Body"
+let withMetadata = MarkdownRenderer.attributedString(from: metadataSource, settings: metadataSettings)
+precondition(withMetadata.string.contains("Metadata") && withMetadata.string.contains("title: Café 👀") && withMetadata.string.contains("Body"))
+precondition(!render(metadataSource).string.contains("Café"))
+let malformedMetadata = MarkdownRenderer.attributedString(from: "---\nkey: \"oops\n---\n# Visible", settings: metadataSettings)
+precondition(malformedMetadata.string.contains("Unrecognized YAML") && malformedMetadata.string.contains("key: \"oops") && malformedMetadata.string.contains("Visible"))
+precondition(MarkdownRenderer.attributedString(from:"---\n---\nBody", settings:metadataSettings).string.contains("No metadata values"))
+precondition(MarkdownText.frontMatter("---\nnot closed\n# Body").metadata == nil)
+let bigMetadata = MarkdownRenderer.attributedString(from:"---\nkey: " + String(repeating:"x",count:20_000) + "\n---\nBody", settings:metadataSettings)
+precondition(bigMetadata.string.contains("Metadata truncated") && bigMetadata.length < 17_000 && bigMetadata.string.contains("Body"))
+let inertMetadata = MarkdownRenderer.attributedString(from:"---\nlink: https://example.org\ntext: '[^x]'\n---\nBody",settings:metadataSettings)
+precondition(links(inertMetadata).isEmpty)
+metadataSettings.save(to:settingsStore)
+precondition(PreviewSettings.load(from:settingsStore).metadata)
+print("Passed optional metadata: defaults, shared settings, Unicode/nesting, malformed/empty/unclosed/oversized YAML, and literal links")

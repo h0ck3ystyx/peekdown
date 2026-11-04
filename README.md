@@ -14,6 +14,8 @@ default; enable them in Peekdown. See the support docs for supported syntax.
 
 ## Features
 
+- **Front-matter metadata (development, next release)** — optionally show literal YAML key/value source above the document. Hidden by default; malformed input stays readable. See [metadata and demo saving](docs/front-matter.md).
+
 - **Manual update checks (v1.1.1)** — check for stable GitHub releases from the app menu or window, then open the release page to download. No background checks or automatic installation. See [update checks and network behavior](docs/update-checks.md).
 - **Quick Look preview** — select a `.md` file and press Space for a rendered document.
 - **YAML preview** — select a `.yaml` or `.yml` file and press Space for a syntax-colored code panel. Oversized or invalid YAML stays plain monospaced text. See [YAML previews](docs/yaml-support.md).

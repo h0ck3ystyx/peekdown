@@ -74,7 +74,7 @@ targets:
         com.apple.security.network.client: true
         com.apple.security.application-groups: [7ZH96S5LF4.com.markdownpreview.shared]
         com.apple.security.app-sandbox: true
-        com.apple.security.files.user-selected.read-only: true
+        com.apple.security.files.user-selected.read-write: true
     dependencies:
       - target: PreviewExtension
         embed: true
